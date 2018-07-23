@@ -133,6 +133,7 @@ impl<T: LightChainClient + 'static> RegistrarClient for LightRegistrar<T> {
 						gas_price: 0.into(),
 						value: 0.into(),
 						data: data,
+						..Default::default()
 					}.fake_sign(Address::default()),
 					header: header.into(),
 					env_info: env_info,

@@ -82,6 +82,9 @@ impl<'a> TransactionView<'a> {
 
 	/// Get the s field of the transaction.
 	pub fn s(&self) -> U256 { self.rlp.val_at(8) }
+
+	/// IOLITE get metadataLimit field from RLP.
+	pub fn metadataLimit(&self) -> u32 { self.rlp.val_at(9) }
 }
 
 #[cfg(test)]

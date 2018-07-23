@@ -39,5 +39,6 @@ pub fn sign_call(request: CallRequest, gas_cap: bool) -> Result<SignedTransactio
 		gas_price: request.gas_price.unwrap_or_else(|| 0.into()),
 		value: request.value.unwrap_or(0.into()),
 		data: request.data.unwrap_or_default(),
+		..Default::default()
 	}.fake_sign(from))
 }

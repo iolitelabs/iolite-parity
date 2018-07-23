@@ -40,6 +40,8 @@ pub struct Transaction {
 	pub origin: Address,
 	/// Sent value.
 	pub value: Uint,
+	/// IOLITE field for metadataLimit for json spec
+	pub metadataLimit: u32,
 }
 
 #[cfg(test)]
@@ -57,7 +59,8 @@ mod tests {
 			"gas" : "0x0186a0",
 			"gasPrice" : "0x5af3107a4000",
 			"origin" : "cd1722f2947def4cf144679da39c4c32bdc35681",
-			"value" : "0x0de0b6b3a7640000"
+			"value" : "0x0de0b6b3a7640000",
+			"metadataLimit": "0"
 		}"#;
 		let _deserialized: Transaction = serde_json::from_str(s).unwrap();
 	}

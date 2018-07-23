@@ -501,7 +501,8 @@ impl Provider where {
 			gas: gas.into(),
 			gas_price: gas_price,
 			value: source.value,
-			data: Self::generate_constructor(validators, executed.code.unwrap_or_default(), executed.state)
+			data: Self::generate_constructor(validators, executed.code.unwrap_or_default(), executed.state),
+			..Default::default()
 		},
 		executed.contract_address))
 	}
@@ -524,7 +525,8 @@ impl Provider where {
 			gas: gas.into(),
 			gas_price: gas_price,
 			value: 0.into(),
-			data: Self::generate_set_state_call(signatures, state)
+			data: Self::generate_set_state_call(signatures, state),
+			..Default::default()
 		})
 	}
 

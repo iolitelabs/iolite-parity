@@ -213,7 +213,10 @@ impl rlp::Encodable for Envelope {
 
 impl rlp::Decodable for Envelope {
 	fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
-		if rlp.item_count()? != 5 { return Err(DecoderError::RlpIncorrectListLen) }
+		if rlp.item_count()? != 5 {
+		    println!("RlpIncorrectListLen at {path}", path="whisper/src/message.rs");
+		    return Err(DecoderError::RlpIncorrectListLen)
+		}
 
 		Ok(Envelope {
 			expiry: rlp.val_at(0)?,

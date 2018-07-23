@@ -269,7 +269,8 @@ impl TestBlockChainClient {
 						data: "3331600055".from_hex().unwrap(),
 						gas: U256::from(100_000),
 						gas_price: U256::from(200_000_000_000u64),
-						nonce: U256::zero()
+						nonce: U256::zero(),
+						..Default::default()
 					};
 					let signed_tx = tx.sign(keypair.secret(), None);
 					txs.append(&signed_tx);
@@ -335,7 +336,8 @@ impl TestBlockChainClient {
 			data: "3331600055".from_hex().unwrap(),
 			gas: U256::from(100_000),
 			gas_price: gas_price,
-			nonce: U256::zero()
+			nonce: U256::zero(),
+                        ..Default::default()
 		};
 		let signed_tx = tx.sign(keypair.secret(), None);
 		self.set_balance(signed_tx.sender(), 10_000_000_000_000_000_000u64.into());
@@ -838,6 +840,7 @@ impl BlockChainClient for TestBlockChainClient {
 			gas_price: U256::zero(),
 			value: U256::default(),
 			data: data,
+                        ..Default::default()
 		};
 		let chain_id = Some(self.spec.chain_id());
 		let sig = self.spec.engine.sign(transaction.hash(chain_id)).unwrap();

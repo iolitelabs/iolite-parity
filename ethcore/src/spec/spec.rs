@@ -789,6 +789,7 @@ impl Spec {
 				gas_price: U256::default(),
 				value: U256::default(),
 				data: d,
+				..Default::default()
 			}.fake_sign(from);
 
 			let res = ::state::prove_transaction(

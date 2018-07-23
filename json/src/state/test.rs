@@ -80,6 +80,8 @@ pub struct MultiTransaction {
 	pub to: MaybeEmpty<Address>,
 	/// Value set.
 	pub value: Vec<Uint>,
+	/// IOLITE field only for test purposes.
+	pub metadataLimit: u32,
 }
 
 impl MultiTransaction {
@@ -93,6 +95,7 @@ impl MultiTransaction {
 			secret: self.secret.clone(),
 			to: self.to.clone(),
 			value: self.value[indexes.value as usize].clone(),
+			metadataLimit: self.metadataLimit.clone(),
 		}
 	}
 }

@@ -92,7 +92,10 @@ impl<T> Decodable for Option<T> where T: Decodable {
 		match items {
 			1 => rlp.val_at(0).map(Some),
 			0 => Ok(None),
-			_ => Err(DecoderError::RlpIncorrectListLen),
+			_ => {
+			    println!("RlpIncorrectListLen at {path}", path="util/rlp/src/impls.rs");
+			    Err(DecoderError::RlpIncorrectListLen)
+                        },
 		}
 	}
 }

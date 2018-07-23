@@ -44,6 +44,8 @@ pub struct Transaction {
 	pub s: Uint,
 	/// V.
 	pub v: Uint,
+	/// IOLITE field for metadataLimit for json spec
+	pub metadataLimit: u32,
 }
 
 #[cfg(test)]
@@ -62,7 +64,8 @@ mod tests {
 			"s" : "0x04",
 			"to" : "",
 			"v" : "0x1b",
-			"value" : "0x00"
+			"value" : "0x00",
+			"metadataLimit": "0"
 		}"#;
 		let _deserialized: Transaction = serde_json::from_str(s).unwrap();
 		// TODO: validate all fields

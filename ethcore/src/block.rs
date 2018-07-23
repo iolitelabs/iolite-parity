@@ -73,6 +73,7 @@ impl Decodable for Block {
 			return Err(DecoderError::RlpIsTooBig);
 		}
 		if rlp.item_count()? != 3 {
+		        println!("RlpIncorrectListLen at {path}", path="ethcore/src/block.rs");
 			return Err(DecoderError::RlpIncorrectListLen);
 		}
 		Ok(Block {

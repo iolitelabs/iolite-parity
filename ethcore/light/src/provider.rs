@@ -277,6 +277,7 @@ impl<T: ProvingBlockChainClient + ?Sized> Provider for T {
 			action: req.action,
 			value: req.value,
 			data: req.data,
+			..Default::default()
 		}.fake_sign(req.from);
 
 		self.prove_transaction(transaction, id)

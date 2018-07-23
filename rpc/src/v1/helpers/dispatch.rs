@@ -432,6 +432,7 @@ fn sign_transaction(
 		gas_price: filled.gas_price,
 		value: filled.value,
 		data: filled.data,
+		..Default::default()
 	};
 
 	if accounts.is_hardware_address(&filled.from) {

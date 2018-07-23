@@ -247,6 +247,7 @@ impl LightFetch {
 					gas_price: gas_price,
 					value: value,
 					data: data,
+					..Default::default()
 				})),
 				(Some(n), None) => Ok((false, EthTransaction {
 					nonce: n,
@@ -255,6 +256,7 @@ impl LightFetch {
 					gas_price: gas_price,
 					value: value,
 					data: data,
+					..Default::default()
 				})),
 				(None, _) => Err(errors::unknown_block()),
 			})
