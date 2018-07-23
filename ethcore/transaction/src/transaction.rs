@@ -112,6 +112,8 @@ pub struct Transaction {
 	pub value: U256,
 	/// Transaction data.
 	pub data: Bytes,
+	/// IOLITE field for metadata
+	pub metadata: Bytes,
 	/// IOLITE field for metadata limit
 	pub metadataLimit: u32,
 }
@@ -122,7 +124,7 @@ impl Transaction {
 	        //println!("===\nMaking RLP for transaction:
                 //        \nNonce: {nonce}, Gas price: {gas_price}, Gas: {gas}, Value: {value}, Data{data:?}",
                 //        nonce=self.nonce, gas_price=self.gas_price, gas=self.gas, value=self.value, data=self.data);
-		s.begin_list(if chain_id.is_none() { 7 } else { 10 });
+		s.begin_list(if chain_id.is_none() { 8 } else { 11 });
 		s.append(&self.nonce);
 		s.append(&self.gas_price);
 		s.append(&self.gas);
@@ -135,6 +137,7 @@ impl Transaction {
 			s.append(&0u8);
 		}
 		//TODO: <IOLITE> think if we need chain_id since we can have some conflicts with.
+                s.append(&self.metadata);
 		s.append(&self.metadataLimit);
 	}
 }
@@ -159,6 +162,7 @@ impl From<ethjson::state::Transaction> for SignedTransaction {
 			},
 			value: t.value.into(),
 			data: t.data.into(),
+			metadata: t.metadata.into(),
 			metadataLimit: t.metadataLimit.into(),
 		};
 		match secret {
@@ -182,6 +186,7 @@ impl From<ethjson::transaction::Transaction> for UnverifiedTransaction {
 				},
 				value: t.value.into(),
 				data: t.data.into(),
+				metadata: t.metadata.into(),
 				metadataLimit: t.metadataLimit.into(),
 			},
 			r: t.r.into(),
@@ -301,7 +306,7 @@ impl Deref for UnverifiedTransaction {
 
 impl rlp::Decodable for UnverifiedTransaction {
 	fn decode(d: &Rlp) -> Result<Self, DecoderError> {
-		if d.item_count()? != 10 {
+		if d.item_count()? != 11 {
 		        println!("RlpIncorrectListLen at {path}", path="ethcore/transaction/src/transaction.rs");
 			return Err(DecoderError::RlpIncorrectListLen);
 		}
@@ -314,7 +319,8 @@ impl rlp::Decodable for UnverifiedTransaction {
 				action: d.val_at(3)?,
 				value: d.val_at(4)?,
 				data: d.val_at(5)?,
-				metadataLimit: d.val_at(9)?,
+				metadata: d.val_at(9)?,
+				metadataLimit: d.val_at(10)?,
 			},
 			v: d.val_at(6)?,
 			r: d.val_at(7)?,
@@ -343,7 +349,7 @@ impl UnverifiedTransaction {
 
 	/// Append object with a signature into RLP stream
 	fn rlp_append_sealed_transaction(&self, s: &mut RlpStream) {
-		s.begin_list(10);
+		s.begin_list(11);
 		s.append(&self.nonce);
 		s.append(&self.gas_price);
 		s.append(&self.gas);
@@ -353,6 +359,7 @@ impl UnverifiedTransaction {
 		s.append(&self.v);
 		s.append(&self.r);
 		s.append(&self.s);
+		s.append(&self.metadata);
 		s.append(&self.metadataLimit);
 	}
 
@@ -618,6 +625,7 @@ mod tests {
 			gas: U256::from(50_000),
 			value: U256::from(1),
 			data: b"Hello!".to_vec(),
+			metadata: b"Iolite metadata!".to_vec(),
 			metadataLimit: 123456,
 		}.sign(&key.secret(), None);
 		assert_eq!(Address::from(keccak(key.public())), t.sender());
@@ -633,6 +641,7 @@ mod tests {
 			gas: U256::from(50_000),
 			value: U256::from(1),
 			data: b"Hello!".to_vec(),
+			metadata: b"Iolite metadata!".to_vec(),
 			metadataLimit: 123456,
 		}.fake_sign(Address::from(0x69));
 		assert_eq!(Address::from(0x69), t.sender());
@@ -654,6 +663,7 @@ mod tests {
 			gas: U256::from(50_000),
 			value: U256::from(1),
 			data: b"Hello!".to_vec(),
+			metadata: b"Iolite metadata!".to_vec(),
 			metadataLimit: 123456,
 		}.sign(&key.secret(), Some(69));
 		assert_eq!(Address::from(keccak(key.public())), t.sender());

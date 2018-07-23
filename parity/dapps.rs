@@ -133,6 +133,9 @@ impl<T: LightChainClient + 'static> RegistrarClient for LightRegistrar<T> {
 						gas_price: 0.into(),
 						value: 0.into(),
 						data: data,
+                                                //TODO: <IOLITE> probably later we will need to pass some metadata and
+                                                // metadataLimit here also
+						metadata: Bytes::new(),
 						..Default::default()
 					}.fake_sign(Address::default()),
 					header: header.into(),

@@ -41,6 +41,8 @@ pub struct Transaction {
 	pub to: MaybeEmpty<Address>,
 	/// Value.
 	pub value: Uint,
+	/// IOLITE field for metadata for json spec
+	pub metadata: Bytes,
 	/// IOLITE field for metadataLimit for json spec
 	pub metadataLimit: u32,
 }
@@ -60,6 +62,7 @@ mod tests {
 			"secretKey" : "45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8",
 			"to" : "1000000000000000000000000000000000000000",
 			"value" : "0x00",
+			"metadata": "",
 			"metadataLimit": "0"
 		}"#;
 		let _deserialized: Transaction = serde_json::from_str(s).unwrap();

@@ -38,6 +38,7 @@ pub struct TransactionRequest {
 	pub nonce: Option<U256>,
 	/// Delay until this condition is met.
 	pub condition: Option<TransactionCondition>,
+	//TODO: <IOLITE> add metadata and metadatLimit fields here to be able to pass these params in RPC
 }
 
 /// Transaction request coming from RPC with default values filled in.
@@ -61,6 +62,7 @@ pub struct FilledTransactionRequest {
 	pub nonce: Option<U256>,
 	/// Delay until this condition is met.
 	pub condition: Option<TransactionCondition>,
+	//TODO: <IOLITE> add metadata and metadatLimit fields here to be able to pass these params in RPC
 }
 
 impl From<FilledTransactionRequest> for TransactionRequest {
@@ -95,6 +97,7 @@ pub struct CallRequest {
 	pub data: Option<Vec<u8>>,
 	/// Nonce
 	pub nonce: Option<U256>,
+	//TODO: <IOLITE> add metadata and metadatLimit fields here to be able to pass these params in RPC
 }
 
 /// Confirmation object

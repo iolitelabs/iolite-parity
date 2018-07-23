@@ -789,6 +789,9 @@ impl Spec {
 				gas_price: U256::default(),
 				value: U256::default(),
 				data: d,
+                                //TODO: <IOLITE> probably later we will need to pass some metadata and
+                                // metadataLimit here also
+				metadata: Bytes::new(),
 				..Default::default()
 			}.fake_sign(from);
 

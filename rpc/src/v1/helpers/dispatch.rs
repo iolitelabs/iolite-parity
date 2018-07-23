@@ -432,6 +432,9 @@ fn sign_transaction(
 		gas_price: filled.gas_price,
 		value: filled.value,
 		data: filled.data,
+                //TODO: <IOLITE> probably later we will need to pass some metadata and
+                // metadataLimit here also
+		metadata: Bytes::new(),
 		..Default::default()
 	};
 

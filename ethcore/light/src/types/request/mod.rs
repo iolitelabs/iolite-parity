@@ -1493,6 +1493,7 @@ pub mod execution {
 		pub value: U256,
 		/// Call data.
 		pub data: Bytes,
+		//TODO: <IOLITE> think if we need metadata and metadataLimit fields here
 	}
 
 	/// The output of a request for proof of execution

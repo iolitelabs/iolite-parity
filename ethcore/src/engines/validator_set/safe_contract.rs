@@ -127,6 +127,7 @@ fn check_first_proof(machine: &EthereumMachine, provider: &validator_set::Valida
 			gas_price: U256::default(),
 			value: U256::default(),
 			data,
+			metadata: Bytes::new(),
 			..Default::default()
 		}.fake_sign(from);
 

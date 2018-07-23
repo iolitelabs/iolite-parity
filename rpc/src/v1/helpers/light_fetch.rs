@@ -247,6 +247,9 @@ impl LightFetch {
 					gas_price: gas_price,
 					value: value,
 					data: data,
+                                        //TODO: <IOLITE> probably later we will need to pass some metadata and
+                                        // metadataLimit here also
+					metadata: vec![],
 					..Default::default()
 				})),
 				(Some(n), None) => Ok((false, EthTransaction {
@@ -256,6 +259,9 @@ impl LightFetch {
 					gas_price: gas_price,
 					value: value,
 					data: data,
+                                        //TODO: <IOLITE> probably later we will need to pass some metadata and
+                                        // metadataLimit here also
+					metadata: vec![],
 					..Default::default()
 				})),
 				(None, _) => Err(errors::unknown_block()),

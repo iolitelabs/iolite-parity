@@ -39,6 +39,9 @@ pub fn sign_call(request: CallRequest, gas_cap: bool) -> Result<SignedTransactio
 		gas_price: request.gas_price.unwrap_or_else(|| 0.into()),
 		value: request.value.unwrap_or(0.into()),
 		data: request.data.unwrap_or_default(),
+                //TODO: <IOLITE> probably later we will need to pass some metadata and
+                // metadataLimit here also
+                metadata: vec![],
 		..Default::default()
 	}.fake_sign(from))
 }

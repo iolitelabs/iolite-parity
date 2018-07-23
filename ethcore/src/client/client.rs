@@ -1163,7 +1163,11 @@ impl Client {
 			gas: U256::from(50_000_000),
 			gas_price: U256::default(),
 			value: U256::default(),
-			data: data,..Default::default()
+			data: data,
+			//TODO: <IOLITE> probably later we will need to pass some metadata and
+			// metadataLimit here also
+			metadata: Bytes::new(),
+			..Default::default()
 		}.fake_sign(from)
 	}
 
@@ -1931,6 +1935,9 @@ impl BlockChainClient for Client {
 			gas_price: self.importer.miner.sensible_gas_price(),
 			value: U256::zero(),
 			data: data,
+			//TODO: <IOLITE> probably later we will need to pass some metadata and
+			// metadataLimit here also
+			metadata: Bytes::new(),
 			..Default::default()
 		};
 		let chain_id = self.engine.signing_chain_id(&self.latest_env_info());

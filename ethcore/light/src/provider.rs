@@ -277,6 +277,9 @@ impl<T: ProvingBlockChainClient + ?Sized> Provider for T {
 			action: req.action,
 			value: req.value,
 			data: req.data,
+			//TODO: <IOLITE> think if we need metadata here.
+			// Need to take a look at 'ethcore/light/src/types/request/mod.rs':1496 l
+			metadata: vec![],
 			..Default::default()
 		}.fake_sign(req.from);
 
