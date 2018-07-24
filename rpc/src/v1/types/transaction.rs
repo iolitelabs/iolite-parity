@@ -55,7 +55,7 @@ pub struct Transaction {
 	/// IOLITE field for metadata
 	pub metadata: Bytes,
 	/// IOLITE field for metadata limit
-	pub metadataLimit: u32,
+	pub metadataLimit: U256,
 	/// Creates contract
 	pub creates: Option<H160>,
 	/// Raw transaction data
@@ -195,7 +195,7 @@ impl Transaction {
 			gas: t.gas.into(),
 			input: Bytes::new(t.data.clone()),
 			metadata: Bytes::new(t.metadata.clone()),
-			metadataLimit: t.metadataLimit,
+			metadataLimit: t.metadataLimit.into(),
 			creates: match t.action {
 				Action::Create => Some(contract_address(scheme, &t.sender(), &t.nonce, &t.data).0.into()),
 				Action::Call(_) => None,
@@ -231,7 +231,7 @@ impl Transaction {
 			gas: t.gas.into(),
 			input: Bytes::new(t.data.clone()),
 			metadata: Bytes::new(t.metadata.clone()),
-			metadataLimit: t.metadataLimit,
+			metadataLimit: t.metadataLimit.into(),
 			creates: match t.action {
 				Action::Create => Some(contract_address(scheme, &t.sender(), &t.nonce, &t.data).0.into()),
 				Action::Call(_) => None,

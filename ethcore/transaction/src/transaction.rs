@@ -115,7 +115,7 @@ pub struct Transaction {
 	/// IOLITE field for metadata
 	pub metadata: Bytes,
 	/// IOLITE field for metadata limit
-	pub metadataLimit: u32,
+	pub metadataLimit: U256,
 }
 
 impl Transaction {
@@ -626,7 +626,7 @@ mod tests {
 			value: U256::from(1),
 			data: b"Hello!".to_vec(),
 			metadata: b"Iolite metadata!".to_vec(),
-			metadataLimit: 123456,
+			metadataLimit: U256::from(123456),
 		}.sign(&key.secret(), None);
 		assert_eq!(Address::from(keccak(key.public())), t.sender());
 		assert_eq!(t.chain_id(), None);
@@ -642,7 +642,7 @@ mod tests {
 			value: U256::from(1),
 			data: b"Hello!".to_vec(),
 			metadata: b"Iolite metadata!".to_vec(),
-			metadataLimit: 123456,
+			metadataLimit: U256::from(123456),
 		}.fake_sign(Address::from(0x69));
 		assert_eq!(Address::from(0x69), t.sender());
 		assert_eq!(t.chain_id(), None);
@@ -664,7 +664,7 @@ mod tests {
 			value: U256::from(1),
 			data: b"Hello!".to_vec(),
 			metadata: b"Iolite metadata!".to_vec(),
-			metadataLimit: 123456,
+			metadataLimit: U256::from(123456),
 		}.sign(&key.secret(), Some(69));
 		assert_eq!(Address::from(keccak(key.public())), t.sender());
 		assert_eq!(t.chain_id(), Some(69));

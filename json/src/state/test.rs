@@ -83,7 +83,7 @@ pub struct MultiTransaction {
 	/// IOLITE metadata field only for test purposes.
 	pub metadata: Vec<Bytes>,
 	/// IOLITE metadataLimit field only for test purposes.
-	pub metadataLimit: u32,
+	pub metadataLimit: Vec<Uint>,
 }
 
 impl MultiTransaction {
@@ -98,7 +98,7 @@ impl MultiTransaction {
 			to: self.to.clone(),
 			value: self.value[indexes.value as usize].clone(),
 			metadata: self.metadata[indexes.data as usize].clone(),
-			metadataLimit: self.metadataLimit.clone(),
+			metadataLimit: self.metadataLimit[indexes.value as usize].clone(),
 		}
 	}
 }

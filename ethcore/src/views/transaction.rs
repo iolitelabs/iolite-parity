@@ -87,7 +87,7 @@ impl<'a> TransactionView<'a> {
 	pub fn metadata(&self) -> Bytes { self.rlp.val_at(9) }
 
 	/// IOLITE get metadataLimit field from RLP.
-	pub fn metadataLimit(&self) -> u32 { self.rlp.val_at(10) }
+	pub fn metadataLimit(&self) -> U256 { self.rlp.val_at(10) }
 }
 
 #[cfg(test)]
