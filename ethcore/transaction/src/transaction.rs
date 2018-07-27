@@ -35,6 +35,9 @@ pub const UNSIGNED_SENDER: Address = H160([0xff; 20]);
 /// System sender address for internal state updates.
 pub const SYSTEM_ADDRESS: Address = H160([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,0xff, 0xff, 0xff, 0xff,0xff, 0xff, 0xff, 0xff,0xff, 0xff, 0xff, 0xfe]);
 
+const RLP_IOLITE_NUM_ITEMS: usize = 11;
+const RLP_ETH_NUM_ITEMS: usize = 9;
+
 /// Transaction action type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
@@ -306,8 +309,13 @@ impl Deref for UnverifiedTransaction {
 
 impl rlp::Decodable for UnverifiedTransaction {
 	fn decode(d: &Rlp) -> Result<Self, DecoderError> {
-		if d.item_count()? != 11 {
+                let num_rlp_items = d.item_count()?;
+                let is_old_tx = num_rlp_items == RLP_ETH_NUM_ITEMS;
+		if num_rlp_items != RLP_IOLITE_NUM_ITEMS
+		    && num_rlp_items != RLP_ETH_NUM_ITEMS {
 		        println!("RlpIncorrectListLen at {path}", path="ethcore/transaction/src/transaction.rs");
+		        println!("Provided {} values, expected {}(Iolite TXs) or {}(Eth TXs)",
+		                 num_rlp_items, RLP_IOLITE_NUM_ITEMS, RLP_ETH_NUM_ITEMS);
 			return Err(DecoderError::RlpIncorrectListLen);
 		}
 		let hash = keccak(d.as_raw());
@@ -319,8 +327,8 @@ impl rlp::Decodable for UnverifiedTransaction {
 				action: d.val_at(3)?,
 				value: d.val_at(4)?,
 				data: d.val_at(5)?,
-				metadata: d.val_at(9)?,
-				metadataLimit: d.val_at(10)?,
+				metadata: if is_old_tx { vec![] } else { d.val_at(9)? },
+				metadataLimit: if is_old_tx { U256::zero() } else { d.val_at(10)? },
 			},
 			v: d.val_at(6)?,
 			r: d.val_at(7)?,
