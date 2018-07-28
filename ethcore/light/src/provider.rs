@@ -23,7 +23,7 @@ use ethcore::blockchain_info::BlockChainInfo;
 use ethcore::client::{BlockChainClient, ProvingBlockChainClient, ChainInfo, BlockInfo as ClientBlockInfo};
 use ethcore::ids::BlockId;
 use ethcore::encoded;
-use ethereum_types::H256;
+use ethereum_types::{H256, U256};
 use parking_lot::RwLock;
 use transaction::PendingTransaction;
 
@@ -280,6 +280,8 @@ impl<T: ProvingBlockChainClient + ?Sized> Provider for T {
 			//TODO: <IOLITE> think if we need metadata here.
 			// Need to take a look at 'ethcore/light/src/types/request/mod.rs':1496 l
 			metadata: vec![],
+                        metadataLimit: U256::zero(),
+                        isOld: false,
 			..Default::default()
 		}.fake_sign(req.from);
 

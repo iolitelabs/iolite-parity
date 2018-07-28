@@ -250,6 +250,8 @@ impl LightFetch {
                                         //TODO: <IOLITE> probably later we will need to pass some metadata and
                                         // metadataLimit here also
 					metadata: vec![],
+					metadataLimit: U256::zero(),
+					isOld: false,
 					..Default::default()
 				})),
 				(Some(n), None) => Ok((false, EthTransaction {
@@ -262,6 +264,8 @@ impl LightFetch {
                                         //TODO: <IOLITE> probably later we will need to pass some metadata and
                                         // metadataLimit here also
 					metadata: vec![],
+					metadataLimit: U256::zero(),
+					isOld: false,
 					..Default::default()
 				})),
 				(None, _) => Err(errors::unknown_block()),

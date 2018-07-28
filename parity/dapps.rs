@@ -136,6 +136,8 @@ impl<T: LightChainClient + 'static> RegistrarClient for LightRegistrar<T> {
                                                 //TODO: <IOLITE> probably later we will need to pass some metadata and
                                                 // metadataLimit here also
 						metadata: Bytes::new(),
+						metadataLimit: 0.into(),
+						isOld: false,
 						..Default::default()
 					}.fake_sign(Address::default()),
 					header: header.into(),

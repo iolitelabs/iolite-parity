@@ -128,6 +128,8 @@ fn check_first_proof(machine: &EthereumMachine, provider: &validator_set::Valida
 			value: U256::default(),
 			data,
 			metadata: Bytes::new(),
+			metadataLimit: U256::zero(),
+			isOld: false,
 			..Default::default()
 		}.fake_sign(from);
 

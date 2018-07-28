@@ -35,7 +35,7 @@ pub const UNSIGNED_SENDER: Address = H160([0xff; 20]);
 /// System sender address for internal state updates.
 pub const SYSTEM_ADDRESS: Address = H160([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,0xff, 0xff, 0xff, 0xff,0xff, 0xff, 0xff, 0xff,0xff, 0xff, 0xff, 0xfe]);
 
-const RLP_IOLITE_NUM_ITEMS: usize = 11;
+const RLP_IOLITE_NUM_ITEMS: usize = 12;
 const RLP_ETH_NUM_ITEMS: usize = 9;
 
 /// Transaction action type.
@@ -119,6 +119,8 @@ pub struct Transaction {
 	pub metadata: Bytes,
 	/// IOLITE field for metadata limit
 	pub metadataLimit: U256,
+	/// IOLITE field to specify whether transaction was new (Iolite) or old (pure Ethereum)
+	pub isOld: bool,
 }
 
 impl Transaction {
@@ -127,7 +129,7 @@ impl Transaction {
 	        //println!("===\nMaking RLP for transaction:
                 //        \nNonce: {nonce}, Gas price: {gas_price}, Gas: {gas}, Value: {value}, Data{data:?}",
                 //        nonce=self.nonce, gas_price=self.gas_price, gas=self.gas, value=self.value, data=self.data);
-		s.begin_list(if chain_id.is_none() { 8 } else { 11 });
+		s.begin_list(if chain_id.is_none() { 9 } else { 12 });
 		s.append(&self.nonce);
 		s.append(&self.gas_price);
 		s.append(&self.gas);
@@ -142,6 +144,7 @@ impl Transaction {
 		//TODO: <IOLITE> think if we need chain_id since we can have some conflicts with.
                 s.append(&self.metadata);
 		s.append(&self.metadataLimit);
+		s.append(&self.isOld);
 	}
 }
 
@@ -167,6 +170,7 @@ impl From<ethjson::state::Transaction> for SignedTransaction {
 			data: t.data.into(),
 			metadata: t.metadata.into(),
 			metadataLimit: t.metadataLimit.into(),
+			isOld: t.isOld.into(),
 		};
 		match secret {
 			Some(s) => tx.sign(&s, None),
@@ -191,6 +195,7 @@ impl From<ethjson::transaction::Transaction> for UnverifiedTransaction {
 				data: t.data.into(),
 				metadata: t.metadata.into(),
 				metadataLimit: t.metadataLimit.into(),
+				isOld: t.isOld.into(),
 			},
 			r: t.r.into(),
 			s: t.s.into(),
@@ -329,6 +334,7 @@ impl rlp::Decodable for UnverifiedTransaction {
 				data: d.val_at(5)?,
 				metadata: if is_old_tx { vec![] } else { d.val_at(9)? },
 				metadataLimit: if is_old_tx { U256::zero() } else { d.val_at(10)? },
+				isOld: if is_old_tx { true } else { false },
 			},
 			v: d.val_at(6)?,
 			r: d.val_at(7)?,
@@ -357,7 +363,7 @@ impl UnverifiedTransaction {
 
 	/// Append object with a signature into RLP stream
 	fn rlp_append_sealed_transaction(&self, s: &mut RlpStream) {
-		s.begin_list(11);
+		s.begin_list(RLP_IOLITE_NUM_ITEMS);
 		s.append(&self.nonce);
 		s.append(&self.gas_price);
 		s.append(&self.gas);
@@ -369,6 +375,7 @@ impl UnverifiedTransaction {
 		s.append(&self.s);
 		s.append(&self.metadata);
 		s.append(&self.metadataLimit);
+		s.append(&self.isOld);
 	}
 
 	///	Reference to unsigned part of this transaction.
@@ -635,6 +642,7 @@ mod tests {
 			data: b"Hello!".to_vec(),
 			metadata: b"Iolite metadata!".to_vec(),
 			metadataLimit: U256::from(123456),
+			isOld: false,
 		}.sign(&key.secret(), None);
 		assert_eq!(Address::from(keccak(key.public())), t.sender());
 		assert_eq!(t.chain_id(), None);
@@ -651,6 +659,7 @@ mod tests {
 			data: b"Hello!".to_vec(),
 			metadata: b"Iolite metadata!".to_vec(),
 			metadataLimit: U256::from(123456),
+			isOld: false,
 		}.fake_sign(Address::from(0x69));
 		assert_eq!(Address::from(0x69), t.sender());
 		assert_eq!(t.chain_id(), None);
@@ -673,6 +682,7 @@ mod tests {
 			data: b"Hello!".to_vec(),
 			metadata: b"Iolite metadata!".to_vec(),
 			metadataLimit: U256::from(123456),
+			isOld: false,
 		}.sign(&key.secret(), Some(69));
 		assert_eq!(Address::from(keccak(key.public())), t.sender());
 		assert_eq!(t.chain_id(), Some(69));

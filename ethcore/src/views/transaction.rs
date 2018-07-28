@@ -88,6 +88,9 @@ impl<'a> TransactionView<'a> {
 
 	/// IOLITE get metadataLimit field from RLP.
 	pub fn metadataLimit(&self) -> U256 { self.rlp.val_at(10) }
+
+	/// IOLITE get isOld field from RLP.
+	pub fn isOld(&self) -> bool { self.rlp.val_at(11) }
 }
 
 #[cfg(test)]

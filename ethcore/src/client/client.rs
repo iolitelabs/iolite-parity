@@ -1167,6 +1167,8 @@ impl Client {
 			//TODO: <IOLITE> probably later we will need to pass some metadata and
 			// metadataLimit here also
 			metadata: Bytes::new(),
+			metadataLimit: U256::zero(),
+			isOld: false,
 			..Default::default()
 		}.fake_sign(from)
 	}
@@ -1938,6 +1940,8 @@ impl BlockChainClient for Client {
 			//TODO: <IOLITE> probably later we will need to pass some metadata and
 			// metadataLimit here also
 			metadata: Bytes::new(),
+			metadataLimit: U256::zero(),
+			isOld: false,
 			..Default::default()
 		};
 		let chain_id = self.engine.signing_chain_id(&self.latest_env_info());

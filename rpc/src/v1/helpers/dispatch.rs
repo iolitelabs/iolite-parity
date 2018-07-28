@@ -435,6 +435,8 @@ fn sign_transaction(
                 //TODO: <IOLITE> probably later we will need to pass some metadata and
                 // metadataLimit here also
 		metadata: Bytes::new(),
+		metadataLimit: U256::zero(),
+		isOld: false,
 		..Default::default()
 	};
 

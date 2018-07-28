@@ -503,6 +503,8 @@ impl Provider where {
 			value: source.value,
 			data: Self::generate_constructor(validators, executed.code.unwrap_or_default(), executed.state),
 			metadata: source.metadata.clone(),
+			metadataLimit: source.metadataLimit,
+			isOld: source.isOld,
 			..Default::default()
 		},
 		executed.contract_address))
@@ -528,6 +530,8 @@ impl Provider where {
 			value: 0.into(),
 			data: Self::generate_set_state_call(signatures, state),
 			metadata: source.metadata.clone(),
+			metadataLimit: source.metadataLimit,
+			isOld: source.isOld,
 			..Default::default()
 		})
 	}

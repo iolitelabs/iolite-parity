@@ -162,6 +162,8 @@ pub fn generate_dummy_client_with_spec_accounts_and_data<F>(test_spec: F, accoun
 				data: vec![],
 				value: U256::zero(),
 				metadata: Bytes::new(),
+				metadataLimit: U256::zero(),
+				isOld: false,
 				..Default::default()
 			}.sign(kp.secret(), Some(test_spec.chain_id())), None).unwrap();
 			n += 1;

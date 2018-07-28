@@ -271,6 +271,8 @@ impl TestBlockChainClient {
 						gas_price: U256::from(200_000_000_000u64),
 						nonce: U256::zero(),
 						metadata: Bytes::new(),
+						metadataLimit: U256::zero(),
+						isOld: false,
 						..Default::default()
 					};
 					let signed_tx = tx.sign(keypair.secret(), None);
@@ -339,6 +341,8 @@ impl TestBlockChainClient {
 			gas_price: gas_price,
 			nonce: U256::zero(),
 			metadata: Bytes::new(),
+			metadataLimit: U256::zero(),
+			isOld: false,
                         ..Default::default()
 		};
 		let signed_tx = tx.sign(keypair.secret(), None);
@@ -845,6 +849,8 @@ impl BlockChainClient for TestBlockChainClient {
 			//TODO: <IOLITE> probably later we will need to pass some metadata and
 			// metadataLimit here also
 			metadata: Bytes::new(),
+			metadataLimit: U256::zero(),
+			isOld: false,
                         ..Default::default()
 		};
 		let chain_id = Some(self.spec.chain_id());
