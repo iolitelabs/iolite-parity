@@ -814,6 +814,7 @@ impl<C, SN: ?Sized, S: ?Sized, M, EM, T: StateInfo + 'static> Eth for EthClient<
 	}
 
 	fn send_raw_transaction(&self, raw: Bytes) -> Result<RpcH256> {
+	        println!("Send_raw_transaction {path}", path="rpc/src/v1/impls/eth.rs:line 817");
 		Rlp::new(&raw.into_vec()).as_val()
 			.map_err(errors::rlp)
 			.and_then(|tx| SignedTransaction::new(tx).map_err(errors::transaction))
@@ -824,7 +825,7 @@ impl<C, SN: ?Sized, S: ?Sized, M, EM, T: StateInfo + 'static> Eth for EthClient<
 					signed_transaction.into(),
 					false
 				)
-			})
+                        })
 			.map(Into::into)
 	}
 

@@ -221,6 +221,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 	pub fn transact_virtual<T, V>(&'a mut self, t: &SignedTransaction, options: TransactOptions<T, V>)
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: Tracer, V: VMTracer,
 	{
+	        println!("Transact_virtual() called.");
 		let sender = t.sender();
 		let balance = self.state.balance(&sender)?;
 		let needed_balance = t.value.saturating_add(t.gas.saturating_mul(t.gas_price));

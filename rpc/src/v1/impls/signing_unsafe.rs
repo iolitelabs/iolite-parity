@@ -86,6 +86,7 @@ impl<D: Dispatcher + 'static> EthSigning for SigningUnsafeClient<D>
 	}
 
 	fn send_transaction(&self, meta: Metadata, request: RpcTransactionRequest) -> BoxFuture<RpcH256> {
+	        println!("Sent send_transaction request in {path}", path="parity/rpc/src/v1/impls/signing_unsafe.rs:line 89");
 		Box::new(self.handle(RpcConfirmationPayload::SendTransaction(request), meta.dapp_id().into())
 			.then(|res| match res {
 				Ok(RpcConfirmationResponse::SendTransaction(hash)) => Ok(hash),
