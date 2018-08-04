@@ -129,15 +129,22 @@ impl Transaction {
 	        //println!("===\nMaking RLP for transaction:
                 //        \nNonce: {nonce}, Gas price: {gas_price}, Gas: {gas}, Value: {value}, Data{data:?}",
                 //        nonce=self.nonce, gas_price=self.gas_price, gas=self.gas, value=self.value, data=self.data);
-		s.begin_list(if chain_id.is_none() { 8 } else { 11 });
+	        let mut num_rlp_items = if self.isOld { 6 } else { 8 };
+	        if chain_id.is_some() {
+	            num_rlp_items += 3;
+	        }
+
+		s.begin_list(num_rlp_items);
 		s.append(&self.nonce);
 		s.append(&self.gas_price);
 		s.append(&self.gas);
 		s.append(&self.action);
 		s.append(&self.value);
 		s.append(&self.data);
-                s.append(&self.metadata);
-                s.append(&self.metadataLimit);
+                if let false = self.isOld {
+                    s.append(&self.metadata);
+                    s.append(&self.metadataLimit);
+                }
 		//s.append(&self.isOld);
 		if let Some(n) = chain_id {
 			s.append(&n);
@@ -378,15 +385,22 @@ impl UnverifiedTransaction {
 
 	/// Append object with a signature into RLP stream
 	fn rlp_append_sealed_transaction(&self, s: &mut RlpStream) {
-		s.begin_list(RLP_IOLITE_NUM_ITEMS - 1);
+	        let num_rlp_items = if self.isOld {
+	            RLP_ETH_NUM_ITEMS
+                } else {
+                    RLP_IOLITE_NUM_ITEMS - 1
+                };
+		s.begin_list(num_rlp_items);
 		s.append(&self.nonce);
 		s.append(&self.gas_price);
 		s.append(&self.gas);
 		s.append(&self.action);
 		s.append(&self.value);
 		s.append(&self.data);
-                s.append(&self.metadata);
-                s.append(&self.metadataLimit);
+                if let false = self.isOld {
+                    s.append(&self.metadata);
+                    s.append(&self.metadataLimit);
+                }
 		//s.append(&self.isOld);
 		s.append(&self.v);
 		s.append(&self.r);
