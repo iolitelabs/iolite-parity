@@ -75,22 +75,22 @@ impl<'a> TransactionView<'a> {
 	pub fn data(&self) -> Bytes { self.rlp.val_at(5) }
 
 	/// Get the v field of the transaction.
-	pub fn v(&self) -> u8 { let r: u16 = self.rlp.val_at(6); r as u8 }
+	pub fn v(&self) -> u8 { let r: u16 = self.rlp.val_at(9); r as u8 }
 
 	/// Get the r field of the transaction.
-	pub fn r(&self) -> U256 { self.rlp.val_at(7) }
+	pub fn r(&self) -> U256 { self.rlp.val_at(10) }
 
 	/// Get the s field of the transaction.
-	pub fn s(&self) -> U256 { self.rlp.val_at(8) }
+	pub fn s(&self) -> U256 { self.rlp.val_at(11) }
 
 	/// IOLITE get metadata field from RLP.
-	pub fn metadata(&self) -> Bytes { self.rlp.val_at(9) }
+	pub fn metadata(&self) -> Bytes { self.rlp.val_at(6) }
 
 	/// IOLITE get metadataLimit field from RLP.
-	pub fn metadataLimit(&self) -> U256 { self.rlp.val_at(10) }
+	pub fn metadataLimit(&self) -> U256 { self.rlp.val_at(7) }
 
 	/// IOLITE get isOld field from RLP.
-	pub fn isOld(&self) -> bool { self.rlp.val_at(11) }
+	pub fn isOld(&self) -> bool { self.rlp.val_at(8) }
 }
 
 #[cfg(test)]

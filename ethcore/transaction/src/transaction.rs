@@ -129,22 +129,21 @@ impl Transaction {
 	        //println!("===\nMaking RLP for transaction:
                 //        \nNonce: {nonce}, Gas price: {gas_price}, Gas: {gas}, Value: {value}, Data{data:?}",
                 //        nonce=self.nonce, gas_price=self.gas_price, gas=self.gas, value=self.value, data=self.data);
-		s.begin_list(if chain_id.is_none() { 9 } else { 12 });
+		s.begin_list(if chain_id.is_none() { 8 } else { 11 });
 		s.append(&self.nonce);
 		s.append(&self.gas_price);
 		s.append(&self.gas);
 		s.append(&self.action);
 		s.append(&self.value);
 		s.append(&self.data);
+                s.append(&self.metadata);
+                s.append(&self.metadataLimit);
+		//s.append(&self.isOld);
 		if let Some(n) = chain_id {
 			s.append(&n);
 			s.append(&0u8);
 			s.append(&0u8);
 		}
-		//TODO: <IOLITE> think if we need chain_id since we can have some conflicts with.
-                s.append(&self.metadata);
-		s.append(&self.metadataLimit);
-		s.append(&self.isOld);
 	}
 }
 
@@ -315,15 +314,23 @@ impl Deref for UnverifiedTransaction {
 impl rlp::Decodable for UnverifiedTransaction {
 	fn decode(d: &Rlp) -> Result<Self, DecoderError> {
                 let num_rlp_items = d.item_count()?;
-                let is_old_tx = num_rlp_items == RLP_ETH_NUM_ITEMS;
-		if num_rlp_items != RLP_IOLITE_NUM_ITEMS
-		    && num_rlp_items != RLP_ETH_NUM_ITEMS {
-		        println!("RlpIncorrectListLen at {path}", path="ethcore/transaction/src/transaction.rs");
-		        println!("Provided {} values, expected {}(Iolite TXs) or {}(Eth TXs)",
-		                 num_rlp_items, RLP_IOLITE_NUM_ITEMS, RLP_ETH_NUM_ITEMS);
-			return Err(DecoderError::RlpIncorrectListLen);
-		}
+                // From the client we receive TXs with no `isOld` field
+                let num_rlp_items_iolite_client = RLP_IOLITE_NUM_ITEMS - 1;
+                let is_eth_tx = num_rlp_items == RLP_ETH_NUM_ITEMS;
+                let is_iolite_client_tx = num_rlp_items == num_rlp_items_iolite_client;
+
+                if num_rlp_items != RLP_IOLITE_NUM_ITEMS
+                    && ! is_iolite_client_tx
+                        && ! is_eth_tx {
+                            println!("RlpIncorrectListLen at {path}", path="ethcore/transaction/src/transaction.rs");
+                            println!("Provided {} values, expected {}(Iolite TXs), {}(Iolite client TX) or {}(Eth TXs)",
+                                     num_rlp_items,
+                                     RLP_IOLITE_NUM_ITEMS, num_rlp_items_iolite_client, RLP_ETH_NUM_ITEMS);
+                            return Err(DecoderError::RlpIncorrectListLen);
+                        }
+
 		let hash = keccak(d.as_raw());
+		let signature_part_start = num_rlp_items - 3; // 3 - num sig values
 		Ok(UnverifiedTransaction {
 			unsigned: Transaction {
 				nonce: d.val_at(0)?,
@@ -332,13 +339,21 @@ impl rlp::Decodable for UnverifiedTransaction {
 				action: d.val_at(3)?,
 				value: d.val_at(4)?,
 				data: d.val_at(5)?,
-				metadata: if is_old_tx { vec![] } else { d.val_at(9)? },
-				metadataLimit: if is_old_tx { U256::zero() } else { d.val_at(10)? },
-				isOld: if is_old_tx { true } else { false },
+                                metadata: if is_eth_tx { vec![] } else { d.val_at(6)? },
+                                metadataLimit: if is_eth_tx { U256::zero() } else { d.val_at(7)? },
+                                isOld: {
+                                    if is_eth_tx {
+                                        true
+                                    } else if is_iolite_client_tx {
+                                        false
+                                    } else {
+                                        d.val_at(8)?
+                                    }
+                                },
 			},
-			v: d.val_at(6)?,
-			r: d.val_at(7)?,
-			s: d.val_at(8)?,
+			v: d.val_at(signature_part_start)?,
+			r: d.val_at(signature_part_start + 1)?,
+			s: d.val_at(signature_part_start + 2)?,
 			hash: hash,
 		})
 	}
@@ -363,19 +378,19 @@ impl UnverifiedTransaction {
 
 	/// Append object with a signature into RLP stream
 	fn rlp_append_sealed_transaction(&self, s: &mut RlpStream) {
-		s.begin_list(RLP_IOLITE_NUM_ITEMS);
+		s.begin_list(RLP_IOLITE_NUM_ITEMS - 1);
 		s.append(&self.nonce);
 		s.append(&self.gas_price);
 		s.append(&self.gas);
 		s.append(&self.action);
 		s.append(&self.value);
 		s.append(&self.data);
+                s.append(&self.metadata);
+                s.append(&self.metadataLimit);
+		//s.append(&self.isOld);
 		s.append(&self.v);
 		s.append(&self.r);
 		s.append(&self.s);
-		s.append(&self.metadata);
-		s.append(&self.metadataLimit);
-		s.append(&self.isOld);
 	}
 
 	///	Reference to unsigned part of this transaction.
