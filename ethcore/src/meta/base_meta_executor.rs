@@ -1,4 +1,8 @@
+//TODO: <IOLITE> copyright
 use vm::Error as VmError;
+use types::metalogs::MetaLogs;
+
+pub type Bytes = Vec<u8>;
 
 
 pub struct BaseMetaExecutor {
@@ -17,6 +21,11 @@ impl BaseMetaExecutor {
             return Err("[iolite] Error! Metadata is empty.");
         }
 
+        //TODO: <IOLITE> don't use hardcoded values as
+        // tx_data_non_zero_gas and tx_data_zero_gas is in ethcore/vm/src/schedule.rs
+        let tx_data_zero_gas = 4u64;
+        let tx_data_non_zero_gas = 68u64;
+
         // Set the starting gas for the raw tx
         let mut gas = 0u64;
         // Bump the required gas by the amount of the transactional data
@@ -26,22 +35,18 @@ impl BaseMetaExecutor {
             .filter(|byte| byte != 0u8)
             .fold(0, |sum, &val| sum + 1);
 
+
+        gas += num_non_zero_bytes * tx_data_non_zero_gas;
         // Make sure we don't exceed u64 for all data combinations
-        //TODO: <IOLITE> don't use hardcoded values as
-        // tx_data_non_zero_gas and tx_data_zero_gas is in ethcore/vm/src/schedule.rs
-        let tx_data_zero_gas = 4u64;
-        let tx_data_non_zero_gas = 68u64;
-        // gas is always empty here?
         if (u64::MAX - gas) / tx_data_non_zero_gas < num_non_zero_bytes {
             return Err(VmError::OutOfGas);
         }
-        gas += num_non_zero_bytes * tx_data_non_zero_gas;
 
         let num_zero_bytes = (self.metadata.len() as u64) - num_non_zero_bytes;
+        gas += num_zero_bytes * tx_data_zero_gas;
         if (u64::MAX - gas) / tx_data_zero_gas < num_zero_bytes {
             return Err(VmError::OutOfGas);
         }
-        gas += num_zero_bytes * tx_data_zero_gas;
 
         return Ok(gas);
     }

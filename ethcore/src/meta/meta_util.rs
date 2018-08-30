@@ -1,38 +1,47 @@
-use types::MetaLogs;
-use meta_payer::MetaPayer;
-use simple_meta_executor::SimpleMetaExecutor;
-use business_meta_executor::BusinessMetaExecutor;
+//TODO: <IOLITE> copyright
+use std::{fmt};
+use types::metalogs::MetaLogs;
+use transaction::{SignedTransaction};
+use ethereum_types::{U256, Address};
+use executive::Executive;
+use state::State;
 
+use meta::base_meta_payer::{BaseMetaPayer, PaymentOptions};
+use meta::simple_meta_payer::SimpleMetaPayer;
+use meta::business_meta_payer::BusinessMetaPayer;
+use meta::simple_meta_executor::SimpleMetaExecutor;
+use meta::business_meta_executor::BusinessMetaExecutor;
+
+type Bytes = Vec<u8>;
 
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 pub enum MetaUtilError {
     // Insufficient funds: (provided: u64, expected: u64)
-    InsufficientFunds(u64, u64),
+    InsufficientFunds,
     //TODO: <IOLITE> since we don't have `IntrinsicGas()` method in parity
     // this error could be not relevant or redundant
     // Intrinsic gas (provided: u64, expected: u64)
-    IntrinsicGasFailed(u64, u64),
-};
+    IntrinsicGasFailed,
+}
 
 impl fmt::Display for MetaUtilError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let msg = match *self {
-            MetaUtilError::InsufficientFunds(ref provided, ref expected) => {
-                format!("insufficient funds for metadata payment or payment are not allowed. Provided: {}; Expected: {}",
-                        provided, expected)
+            MetaUtilError::InsufficientFunds => {
+                format!("insufficient funds for metadata payment or payment are not allowed.")
             },
-            MetaUtilError::IntrinsicGasFailed(ref provided, ref expected) => {
-                format!("Metadata intrinsic gas error. Provided: {}; Expected: {}", provided, expected)
+            MetaUtilError::IntrinsicGasFailed => {
+                format!("Metadata intrinsic gas error.");
             },
-        }
+        };
 
-        f.write_fmt(format_args!(MetaUtilError({}), msg))
+        f.write_fmt(format_args!("MetaUtilError({})", msg))
     }
 }
 
-fn unpack_simple_metadata(from: U256, metadata: Bytes, meta_limit: U256, read_evm: &'a mut Executive)//state: State)
-        // return (payer, meta_logs, payment)
-        -> Result<(MetaPayer, MetaLogs, U256), MetaUtilError> {
+pub fn unpack_simple_metadata(from: Address, metadata: Bytes, meta_limit: U256, read_evm: &'a mut State)//read_evm: Executive)
+        // return (payer, meta_logs, payment, intrinsic_gas)
+        -> Result<(BaseMetaPayer, MetaLogs, U256, u64), MetaUtilError> {
     println!("[iolite] UnpackSimpleMetadata. Metalimit={}", meta_limit);
     let executor = SimpleMetaExecutor::new(metadata);
 
@@ -41,32 +50,31 @@ fn unpack_simple_metadata(from: U256, metadata: Bytes, meta_limit: U256, read_ev
 
     let meta_logs = executor.execute()?;
 
-    let payer = SimpleMetaPayer::new(from, meta_logs, meta_limit, state);
+    let payer = SimpleMetaPayer::new(from, meta_logs, meta_limit, read_evm);
     //TODO: <IOLITE> do we really need this?
     let payer_gas = payer.intrinsic_gas()?;
 
     let payment = match payer.can_pay() {
-        //TODO: implement enum for payer: e.g. `enum Payer::PaymentOptions { Payment(u64), CantPay, }`
-        Payer::Payment(payment) => payment,
-        Payer::CantPay => return Err(InsufficientFunds(0u64, 0u64)),
+        PaymentOptions::CanPay(payment) => payment,
+        PaymentOptions::CantPay => return Err(MetaUtilError::InsufficientFunds),
     };
 
     //TODO: <IOLITE> do we really need this?
     let intrinsic_gas = executor_gas + payer_gas;
     if intrinsic_gas < executor_gas {
-        return Err(IntrinsicGasFailed(0u64, 0u64));
+        return Err(MetaUtilError::IntrinsicGasFailed);
     }
 
     Ok(payer, meta_logs, payment, intrinsic_gas)
 }
 
 
-fn unpack_business_metadata(from: U256, metadata: Bytes, meta_limit: U256,
+pub fn unpack_business_metadata(from: Address, metadata: Bytes, meta_limit: U256,
                             transaction: &SignedTransaction,
                             read_evm: &mut Executive, write_evm: &mut Executive)
                             //read_state: State, write_state: State)
         // return (payer, meta_logs, payment, intrinsic_gas)
-        -> Result<(MetaPayer, MetaLogs, U256, U256), MetaUtilError> {
+        -> Result<(BaseMetaPayer, MetaLogs, U256, u64), MetaUtilError> {
     println!("[iolite] UnpackBusinessMetadata. Metalimit={}", meta_limit);
 
     let executor = BusinessMetaExecutor::new(metadata, transaction, from, read_evm);
@@ -76,20 +84,19 @@ fn unpack_business_metadata(from: U256, metadata: Bytes, meta_limit: U256,
 
     let meta_logs = executor.execute()?;
 
-    let payer = BusinessMetaPayer::new(from, meta_logs, meta_limit, write_state);
+    let payer = BusinessMetaPayer::new(from, meta_logs, meta_limit, write_evm);
     //TODO: <IOLITE> do we really need this?
     let payer_gas = payer.intrinsic_gas()?;
 
     let payment = match payer.can_pay() {
-        //TODO: implement enum for payer: e.g. `enum Payer::PaymentOptions { Payment(u64), CantPay, }`
-        Payer::Payment(payment) => payment,
-        Payer::CantPay => return Err(InsufficientFunds(0u64, 0u64)),
+        PaymentOptions::CanPay(payment) => payment,
+        PaymentOptions::CantPay => return Err(MetaUtilError::InsufficientFunds),
     };
 
     //TODO: <IOLITE> do we really need this?
     let intrinsic_gas = executor_gas + payer_gas;
     if intrinsic_gas < executor_gas {
-        return Err(IntrinsicGasFailed(0u64, 0u64));
+        return Err(MetaUtilError::IntrinsicGasFailed);
     }
 
     Ok(payer, meta_logs, payment, intrinsic_gas)

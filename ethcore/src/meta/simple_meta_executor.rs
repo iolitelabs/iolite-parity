@@ -1,13 +1,18 @@
-use base_meta_executor::{BaseMetaExecutor, MetaExecute};
+//TODO: <IOLITE> copyright
+use std::ops::Deref;
+use rlp::{self};
 
-struct SimpleMetaExecutor {
+use types::metalogs::MetaLogs;
+use meta::base_meta_executor::{BaseMetaExecutor, MetaExecute, Bytes};
+
+pub struct SimpleMetaExecutor {
     executor: BaseMetaExecutor,
 }
 
 impl Deref for SimpleMetaExecutor {
     type Target = BaseMetaExecutor;
 
-    fn deref(&self) -> &Self::Type {
+    fn deref(&self) -> &Self::Target{
         &self.executor
     }
 }

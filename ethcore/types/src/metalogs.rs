@@ -3,7 +3,7 @@
 //use serde::{Serialize};
 //use serde::ser::SerializeStruct;
 use ethereum_types::{U256, Address};
-use rlp::{self};
+use rlp::{self, RlpStream, DecoderError, Encodable};
 
 #[derive(Debug)]
 pub struct MetaLogs {

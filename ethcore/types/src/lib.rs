@@ -20,6 +20,9 @@ extern crate ethereum_types;
 extern crate ethcore_bytes as bytes;
 extern crate ethjson;
 extern crate rlp;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 #[macro_use]
 extern crate rlp_derive;
 extern crate keccak_hash as hash;
@@ -46,6 +49,7 @@ pub mod state_diff;
 pub mod trace_filter;
 pub mod tree_route;
 pub mod verification_queue_info;
+pub mod metalogs;
 
 /// Type for block number.
 pub type BlockNumber = u64;
