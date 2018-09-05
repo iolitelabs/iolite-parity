@@ -32,6 +32,12 @@ impl rlp::Encodable for MetaLogs {
 }
 
 impl MetaLogs {
+    pub fn new() -> Self {
+        MetaLogs {
+            logs: vec![],
+        }
+    }
+
     // Will fail on compile
     pub fn logs(&self) -> &[MetaLog] {
         &self.logs
@@ -42,14 +48,15 @@ impl MetaLogs {
     }
 }
 
+//TODO: Implement Iterator for MetaLogs
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 //TODO: <IOLITE> need to implement rlp::Encodable for this field
 pub struct MetaLog {
     #[serde(rename="to")]
-    recipient: Address,
+    pub recipient: Address,
     #[serde(rename="value")]
-    amount: U256,
+    pub amount: U256,
 }
 
 impl rlp::Decodable for MetaLog {

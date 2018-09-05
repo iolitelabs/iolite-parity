@@ -18,7 +18,7 @@ impl Deref for SimpleMetaExecutor {
 }
 
 impl SimpleMetaExecutor {
-    fn new(metadata: Bytes) -> Self {
+    pub fn new(metadata: Bytes) -> Self {
         SimpleMetaExecutor {
             executor: BaseMetaExecutor { metadata: metadata },
         }
@@ -26,7 +26,7 @@ impl SimpleMetaExecutor {
 }
 
 impl MetaExecute for SimpleMetaExecutor {
-    fn execute(&self) -> Result<MetaLogs, ()> {
+    fn execute(&self) -> Result<MetaLogs, Err> {
         if self.metadata.len() == 0 {
             return Err("[iolite] Error! Metadata is empty.");
         }

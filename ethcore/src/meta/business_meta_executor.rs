@@ -2,21 +2,22 @@
 use std::ops::Deref;
 use rlp::{self};
 use executive::{Executive, TransactOptions};
-use transaction::{SignedTransaction};
+use transaction::{SignedTransaction, Transaction, UnverifiedTransaction};
 use ethereum_types::{U256, Address};
+use state::{Backend as StateBackend};
 
 use types::metalogs::MetaLogs;
 use meta::base_meta_executor::{BaseMetaExecutor, MetaExecute, Bytes};
 
-pub struct BusinessMetaExecutor {
+pub struct BusinessMetaExecutor<'a, T: 'a + StateBackend> {
     executor: BaseMetaExecutor,
 
     transaction: &'a SignedTransaction,
     from: Address,
-    read_evm: &'a mut Executive,
+    read_evm: &'a mut Executive<'a, T>,
 }
 
-impl Deref for BusinessMetaExecutor {
+impl<'a, T: 'a + StateBackend> Deref for BusinessMetaExecutor<'a, T> {
     type Target = BaseMetaExecutor;
 
     fn deref(&self) -> &Self::Target {
@@ -24,8 +25,8 @@ impl Deref for BusinessMetaExecutor {
     }
 }
 
-impl BusinessMetaExecutor {
-    pub fn new(metadata: Bytes, transaction: &'a mut SignedTransaction, from: Address, read_evm: &'a mut Executive)
+impl<'a, T: 'a + StateBackend> BusinessMetaExecutor<'a, T> {
+    pub fn new(metadata: Bytes, transaction: &'a SignedTransaction, from: Address, read_evm: &'a mut Executive<'a, T>)
             -> Self {
         BusinessMetaExecutor {
             executor: BaseMetaExecutor { metadata: metadata },
@@ -36,8 +37,8 @@ impl BusinessMetaExecutor {
     }
 }
 
-impl MetaExecute for BusinessMetaExecutor {
-    fn execute(&self) -> Result<MetaLogs, ()> {
+impl<'a, T: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, T> {
+    fn execute(&self) -> Result<MetaLogs, Err> {
         if self.metadata.len() == 0 {
             return Err("Error! Metadata is empty.");
         }
@@ -47,11 +48,14 @@ impl MetaExecute for BusinessMetaExecutor {
         //info!("[iolite] Business metadata: {:#?}", business_metadata);
 
         let tx = SignedTransaction {
-            data: self.transaction.metadata.cloned(),
+            transaction: Transaction {
+                data: self.transaction.metadata.cloned(),
+                ..self.transaction
+            },
             ..self.transaction
         };
         let transact_options = TransactOptions::with_tracing_and_vm_tracing();
-        let result = self.read_evm.transact_virtual(tx, transact_options)?;
+        let result = self.read_evm.transact_virtual(&tx, transact_options)?;
 
         info!("[iolite] Executed metadata: {:#?}", result.output);
         if result.output.len() != 64 {
@@ -60,7 +64,7 @@ impl MetaExecute for BusinessMetaExecutor {
 
         let metalogs = MetaLogs::new();
         //TODO: <IOLITE> should we convert address simillar to geth? `common.BytesToAddress(&result.output[:32])`
-        metalogs.push(&result.output[..32], U256::from_slice(&result.output[32..]));
+        metalogs.push(Address::from(&result.output[..32]), U256::from(&result.output[32..]));
 
         for data in metalogs.logs() {
             info!("[iolite] Decoded Metalogs. To: {}, Value: {}", data.recipient, data.amount);

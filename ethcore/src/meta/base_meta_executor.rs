@@ -1,4 +1,6 @@
 //TODO: <IOLITE> copyright
+use std::u64;
+
 use vm::Error as VmError;
 use types::metalogs::MetaLogs;
 
@@ -6,17 +8,17 @@ pub type Bytes = Vec<u8>;
 
 
 pub struct BaseMetaExecutor {
-    metadata: Bytes,
+    pub metadata: Bytes,
 }
 
 pub trait MetaExecute {
-    fn execute(&self) -> Result<MetaLogs, ()>;
+    fn execute(&self) -> Result<MetaLogs, Err>;
 }
 
 impl BaseMetaExecutor {
     // Computes the 'intrinsic gas' for a message with a given metadata.
     //TODO: <IOLITE> need to rework algorithm
-    pub fn intrinsic_gas(&self) -> Result<u64, ()> {
+    pub fn intrinsic_gas(&self) -> Result<u64, Err> {
         if self.metadata.len() == 0 {
             return Err("[iolite] Error! Metadata is empty.");
         }

@@ -1,13 +1,15 @@
 //TODO: <IOLITE> copyright
+use std::ops::Add;
+use std::cmp::Ordering;
 use types::metalogs::MetaLogs;
 use ethereum_types::{U256, Address};
 use vm::Error as VmError;
 
 
 pub struct BaseMetaPayer {
-    from: Address,
-    meta_logs: MetaLogs,
-    meta_limit: U256,
+    pub from: Address,
+    pub meta_logs: MetaLogs,
+    pub meta_limit: U256,
 }
 
 pub trait MetaPayable {
@@ -15,7 +17,7 @@ pub trait MetaPayable {
 }
 
 pub trait MetaPay {
-    fn pay(&self, gas: u64) -> Result<U256, ()>;
+    fn pay(&self, gas: u64) -> Result<(U256, u64), Err>;
 }
 
 pub enum PaymentOptions {
@@ -32,7 +34,7 @@ impl BaseMetaPayer {
         }
     }
 
-    pub fn intrinsic_gas(&self) -> Result<u64, ()> {
+    pub fn intrinsic_gas(&self) -> Result<u64, Err> {
         let num_logs = self.meta_logs.logs().len() as u64;
         if num_logs == 0 {
             return Err("Metalogs are empty.");
@@ -64,7 +66,7 @@ impl MetaPayable for BaseMetaPayer {
         }
 
         info!("[iolite] CanPay sum={}, metaLimit={}", sum, self.meta_limit);
-        if sum.cmp(self.meta_limit) > 0 {
+        if let Ordering::Less = sum.cmp(&self.meta_limit) {
             return PaymentOptions::CantPay;
         }
 

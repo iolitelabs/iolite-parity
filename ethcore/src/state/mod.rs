@@ -51,6 +51,8 @@ use trie;
 use trie::{Trie, TrieError, TrieDB};
 use trie::recorder::Recorder;
 
+use meta::meta_util::{unpack_simple_metadata};
+
 
 mod account;
 mod substate;
@@ -216,6 +218,7 @@ pub fn check_proof(
 	};
 
 	let options = TransactOptions::with_no_tracing().save_output_from_contract();
+	println!("[check_proof] at {path}", path="ethcore/src/state/mod.rs:line 194");
 	match state.execute(env_info, machine, transaction, options, true) {
 		Ok(executed) => ProvedExecution::Complete(executed),
 		Err(ExecutionError::Internal(_)) => ProvedExecution::BadProof,
@@ -251,6 +254,7 @@ pub fn prove_transaction<H: AsHashDB + Send + Sync>(
 	};
 
 	let options = TransactOptions::with_no_tracing().dont_check_nonce().save_output_from_contract();
+	println!("[prove_transaction] at {path}", path="ethcore/src/state/mod.rs:line 230");
 	match state.execute(env_info, machine, transaction, options, virt) {
 		Err(ExecutionError::Internal(_)) => None,
 		Err(e) => {
@@ -397,6 +401,7 @@ impl<B: Backend> State<B> {
 		Ok(state)
 	}
 
+	/// //<LOOK>
 	/// Get a VM factory that can execute on this state.
 	pub fn vm_factory(&self) -> VmFactory {
 		self.factories.vm.clone()
@@ -698,6 +703,7 @@ impl<B: Backend> State<B> {
 	/// Execute a given transaction, producing a receipt and an optional trace.
 	/// This will change the state accordingly.
 	pub fn apply(&mut self, env_info: &EnvInfo, machine: &Machine, t: &SignedTransaction, tracing: bool) -> ApplyResult<FlatTrace, VMTrace> {
+                println!("[apply] at {path}", path="ethcore/src/state/mod.rs:line 703");
 		if tracing {
 			let options = TransactOptions::with_tracing();
 			self.apply_with_tracing(env_info, machine, t, options.tracer, options.vm_tracer)
@@ -720,6 +726,7 @@ impl<B: Backend> State<B> {
 		T: trace::Tracer,
 		V: trace::VMTracer,
 	{
+                println!("[apply_with_tracing] at {path}", path="ethcore/src/state/mod.rs:line 715");
 		let options = TransactOptions::new(tracer, vm_tracer);
 		let e = self.execute(env_info, machine, t, options, false)?;
 		let params = machine.params();
@@ -759,12 +766,34 @@ impl<B: Backend> State<B> {
 	fn execute<T, V>(&mut self, env_info: &EnvInfo, machine: &Machine, t: &SignedTransaction, options: TransactOptions<T, V>, virt: bool)
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: trace::Tracer, V: trace::VMTracer,
 	{
-		let mut e = Executive::new(self, env_info, machine);
+	        println!("[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
+		//let mut e = Executive::new(self, env_info, machine);
 
-		match virt {
+		//match virt {
+		//	true => e.transact_virtual(t, options),
+		//	false => e.transact(t, options),
+		//}
+		let main_transact_result = {
+		    let mut e = Executive::new(self, env_info, machine);
+		    match virt {
 			true => e.transact_virtual(t, options),
 			false => e.transact(t, options),
-		}
+                    }
+		};
+
+		self.checkpoint();
+		//let mut read_only_state = self.create_copy();
+		//let mut read_only_e = Executive::new(read_only_state, env_info, machine);
+                {
+		    let mut read_only_e = Executive::new(self, env_info, machine);
+                    unpack_simple_metadata(t.sender(), t.metadata, t.metadataLimit, &mut read_only_e);
+                }
+		//TODO <IOLITE>: add UnpackBusinessMetadata call here
+		//unpack_business_metadata(t.sender, t.metadata, t.metadataLimit, t,
+		//                         &mut read_only_e, &mut self);
+		self.revert_to_checkpoint();
+
+                main_transact_result
 	}
 
 	fn touch(&mut self, a: &Address) -> trie::Result<()> {
