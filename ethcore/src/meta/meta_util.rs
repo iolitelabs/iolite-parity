@@ -42,7 +42,7 @@ impl fmt::Display for MetaUtilError {
 
 pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata: Bytes, meta_limit: U256, read_evm: &'a mut State<T>)//read_evm: Executive)
         // return (payer, meta_logs, payment, intrinsic_gas)
-        -> Result<(SimpleMetaPayer<'a, T>, MetaLogs, U256, u64), MetaUtilError> {
+        -> Result<(SimpleMetaPayer<'a, T>, MetaLogs, U256, u64), String/*MetaUtilError*/> {
     println!("[iolite] UnpackSimpleMetadata. Metalimit={}", meta_limit);
     let executor = SimpleMetaExecutor::new(metadata);
 
@@ -57,13 +57,13 @@ pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata:
 
     let payment = match payer.can_pay() {
         PaymentOptions::CanPay(payment) => payment,
-        PaymentOptions::CantPay => return Err(MetaUtilError::InsufficientFunds),
+        PaymentOptions::CantPay => return Err(MetaUtilError::InsufficientFunds.to_string()),
     };
 
     //TODO: <IOLITE> do we really need this?
     let intrinsic_gas = executor_gas + payer_gas;
     if intrinsic_gas < executor_gas {
-        return Err(MetaUtilError::IntrinsicGasFailed);
+        return Err(MetaUtilError::IntrinsicGasFailed.to_string());
     }
 
     Ok((payer, meta_logs, payment, intrinsic_gas))
@@ -71,12 +71,12 @@ pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata:
 
 
 pub fn unpack_business_metadata<'a, T: 'a + StateBackend>(from: Address, metadata: Bytes, meta_limit: U256,
-                                                          transaction: &SignedTransaction,
-                                                          read_evm: &mut Executive<T>,
-                                                          write_evm: &mut Executive<T>)
+                                                          transaction: &'a SignedTransaction,
+                                                          read_evm: &'a mut Executive<'a, T>,
+                                                          write_evm: &'a mut Executive<'a, T>)
                             //read_state: State, write_state: State)
         // return (payer, meta_logs, payment, intrinsic_gas)
-        -> Result<(BusinessMetaPayer<'a, T>, MetaLogs, U256, u64), MetaUtilError> {
+        -> Result<(BusinessMetaPayer<'a, T>, MetaLogs, U256, u64), String/*MetaUtilError*/> {
     println!("[iolite] UnpackBusinessMetadata. Metalimit={}", meta_limit);
 
     let executor = BusinessMetaExecutor::new(metadata, transaction, from, read_evm);
@@ -92,13 +92,13 @@ pub fn unpack_business_metadata<'a, T: 'a + StateBackend>(from: Address, metadat
 
     let payment = match payer.can_pay() {
         PaymentOptions::CanPay(payment) => payment,
-        PaymentOptions::CantPay => return Err(MetaUtilError::InsufficientFunds),
+        PaymentOptions::CantPay => return Err(MetaUtilError::InsufficientFunds.to_string()),
     };
 
     //TODO: <IOLITE> do we really need this?
     let intrinsic_gas = executor_gas + payer_gas;
     if intrinsic_gas < executor_gas {
-        return Err(MetaUtilError::IntrinsicGasFailed);
+        return Err(MetaUtilError::IntrinsicGasFailed.to_string());
     }
 
     Ok((payer, meta_logs, payment, intrinsic_gas))

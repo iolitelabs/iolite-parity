@@ -16,8 +16,8 @@ pub trait MetaPayable {
     fn can_pay(&self) -> PaymentOptions;
 }
 
-pub trait MetaPay {
-    fn pay(&self, gas: u64) -> Result<(U256, u64), Err>;
+pub trait MetaPay<'a> {
+    fn pay(&'a mut self, gas: u64) -> Result<(U256, u64), String>;
 }
 
 pub enum PaymentOptions {
@@ -34,10 +34,10 @@ impl BaseMetaPayer {
         }
     }
 
-    pub fn intrinsic_gas(&self) -> Result<u64, Err> {
+    pub fn intrinsic_gas(&self) -> Result<u64, String> {
         let num_logs = self.meta_logs.logs().len() as u64;
         if num_logs == 0 {
-            return Err("Metalogs are empty.");
+            return Err("Metalogs are empty.".to_string());
         }
 
         //TODO: <IOLITE> don't use hardcoded values as
@@ -46,7 +46,7 @@ impl BaseMetaPayer {
         let gas = num_logs * tx_gas;
         // Check overflow
         if gas / num_logs != tx_gas {
-            return Err(VmError::OutOfGas);
+            return Err(VmError::OutOfGas.to_string());
         }
 
         Ok(gas)

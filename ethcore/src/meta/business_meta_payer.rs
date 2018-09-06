@@ -1,5 +1,5 @@
 use std::ops::Deref;
-use transaction::{Transaction, SignedTransaction, UnverifiedTransaction};
+use transaction::{Transaction, SignedTransaction, UnverifiedTransaction, Action};
 use types::metalogs::MetaLogs;
 use ethereum_types::{U256, Address};
 use executive::{Executive, TransactOptions};
@@ -16,7 +16,7 @@ pub struct BusinessMetaPayer<'a, T: 'a + StateBackend> {
 }
 
 impl<'a, T: 'a + StateBackend> BusinessMetaPayer<'a, T> {
-    pub fn new(from: Address, meta_logs: MetaLogs, meta_limit: U256, transaction: &'a SignedTransaction, executive: &mut Executive<'a, T>) -> Self {
+    pub fn new(from: Address, meta_logs: MetaLogs, meta_limit: U256, transaction: &'a SignedTransaction, executive: &'a mut Executive<'a, T>) -> Self {
         BusinessMetaPayer {
             payer: BaseMetaPayer::new(from, meta_logs, meta_limit),
             transaction: transaction,
@@ -33,15 +33,15 @@ impl<'a, T: 'a + StateBackend> Deref for BusinessMetaPayer<'a, T> {
     }
 }
 
-impl<'a, T: 'a + StateBackend> MetaPay for BusinessMetaPayer<'a, T> {
-    fn pay(&self, gas: u64) -> Result<(U256, u64), Err> {
+impl<'a, T: 'a + StateBackend> MetaPay<'a> for BusinessMetaPayer<'a, T> {
+    fn pay(&'a mut self, gas: u64) -> Result<(U256, u64), String> {
         if self.payer.meta_logs.logs().len() > 1 {
-            return Err("Only one recipient is allowed for business call");
+            return Err("Only one recipient is allowed for business call".to_string());
         }
 
         let sum = match self.payer.can_pay() {
             PaymentOptions::CanPay(amount) => amount,
-            _ => return Err(MetaUtilError::InsufficientFunds),
+            _ => return Err(MetaUtilError::InsufficientFunds.to_string()),
         };
 
         let gas_left = try_pay(self.payer.from, &self.payer.meta_logs, self.transaction, self.evm, gas)?;
@@ -50,24 +50,37 @@ impl<'a, T: 'a + StateBackend> MetaPay for BusinessMetaPayer<'a, T> {
     }
 }
 
-fn try_pay<'a, T: 'a + StateBackend>(from: Address, meta_logs: &MetaLogs, transaction: &'a SignedTransaction, evm: &'a mut Executive<T>, gas: u64) -> Result<u64, ()> {
+fn try_pay<'a, T: 'a + StateBackend>(from: Address, meta_logs: &MetaLogs, transaction: &'a SignedTransaction, evm: &'a mut Executive<'a, T>, gas: u64) -> Result<u64, String> {
     let mut gas_left = gas;
-    for log in meta_logs {
+    for log in meta_logs.logs() {
         let transact_options = TransactOptions::with_tracing_and_vm_tracing();
-        let tx = SignedTransaction {
-            transaction: UnverifiedTransaction {
-                unsinged: Transaction {
-                    from: from,
-                    value: log.amount,
-                    gas: U256::from(gas_left),
-                    data: vec![],
-                    ..Default::default()
-                }
-                to: log.recipient,
-            },
-            ..*transaction };
-        let result = evm.transact_virtual(&tx, transact_options)?;
-        gas_left = result.gas_left;
+        let mut tx = SignedTransaction {
+            sender: from,
+            ..transaction.clone()
+        };
+        tx.as_unsigned().value = log.amount;
+        tx.as_unsigned().gas = U256::from(gas_left);
+        tx.as_unsigned().action = Action::Call(log.recipient);
+        //let tx = SignedTransaction {
+        //    transaction: UnverifiedTransaction {
+        //        unsigned: Transaction {
+        //            value: log.amount,
+        //            gas: U256::from(gas_left),
+        //            data: vec![],
+        //            action: Action::Call(log.recipient),
+        //            ..Default::default()
+        //        },
+        //        //to: log.recipient,
+        //    },
+        //    sender: from,
+        //    ..*transaction };
+        //let result = evm.transact_virtual(&tx, transact_options)?;
+        let result = match evm.transact_virtual(&tx, transact_options) {
+            Ok(executed_result) => executed_result,
+            Err(e) => return Err(e.to_string()),
+        };
+        //TODO: <IOLITE> is gas_left == refunded ?
+        gas_left = result.refunded.as_u64(); // Will panic if number is larger then 2^64
         info!("[iolite] TryPay gas={}; gas_left={}, gas_used={}", gas, gas_left, gas-gas_left);
     }
 

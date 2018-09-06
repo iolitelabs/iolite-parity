@@ -37,29 +37,26 @@ impl<'a, T: 'a + StateBackend> BusinessMetaExecutor<'a, T> {
     }
 }
 
-impl<'a, T: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, T> {
-    fn execute(&self) -> Result<MetaLogs, Err> {
+impl<'a, T: 'a + StateBackend> MetaExecute<'a> for BusinessMetaExecutor<'a, T> {
+    fn execute(&'a mut self) -> Result<MetaLogs, String> {
         if self.metadata.len() == 0 {
-            return Err("Error! Metadata is empty.");
+            return Err("Error! Metadata is empty.".to_string());
         }
 
         //TODO: <IOLITE> implement BusinessMetadata
         //let business_metadata: BusinessMetadata = rlp::decode(&self.metadata)?;
         //info!("[iolite] Business metadata: {:#?}", business_metadata);
 
-        let tx = SignedTransaction {
-            transaction: Transaction {
-                data: self.transaction.metadata.cloned(),
-                ..self.transaction
-            },
-            ..self.transaction
-        };
+        let tx = self.transaction.get_copy_with_metadata_equals_data();
         let transact_options = TransactOptions::with_tracing_and_vm_tracing();
-        let result = self.read_evm.transact_virtual(&tx, transact_options)?;
+        let result = match self.read_evm.transact_virtual(&tx, transact_options) {
+            Ok(executed_result) => executed_result,
+            Err(e) => return Err(e.to_string()),
+        };
 
         info!("[iolite] Executed metadata: {:#?}", result.output);
         if result.output.len() != 64 {
-            return Err("The business call result does not match the format (address, uint256)");
+            return Err("The business call result does not match the format (address, uint256)".to_string());
         }
 
         let metalogs = MetaLogs::new();

@@ -162,6 +162,8 @@ impl HeapSizeOf for Transaction {
 
 impl From<ethjson::state::Transaction> for SignedTransaction {
 	fn from(t: ethjson::state::Transaction) -> Self {
+	        println!("[iolite][from(ethjson::state::Transaction to SignedTransaction)] at {path}",
+	                  path="ethcore/transaction/src/transactino.rs:line 163");
 		let to: Option<ethjson::hash::Address> = t.to.into();
 		let secret = t.secret.map(|s| Secret::from(s.0));
 		let tx = Transaction {
@@ -188,6 +190,8 @@ impl From<ethjson::state::Transaction> for SignedTransaction {
 impl From<ethjson::transaction::Transaction> for UnverifiedTransaction {
 	fn from(t: ethjson::transaction::Transaction) -> Self {
 		let to: Option<ethjson::hash::Address> = t.to.into();
+	        println!("[iolite][from(ethjson::state::Transaction to UnverifiedTransaction)] at {path}",
+	                 path="ethcore/transaction/src/transactino.rs:line 190");
 		UnverifiedTransaction {
 			unsigned: Transaction {
 				nonce: t.nonce.into(),
@@ -329,8 +333,8 @@ impl rlp::Decodable for UnverifiedTransaction {
                 if num_rlp_items != RLP_IOLITE_NUM_ITEMS
                     && ! is_iolite_client_tx
                         && ! is_eth_tx {
-                            println!("RlpIncorrectListLen at {path}", path="ethcore/transaction/src/transaction.rs");
-                            println!("Provided {} values, expected {}(Iolite TXs), {}(Iolite client TX) or {}(Eth TXs)",
+                            println!("[iolite]RlpIncorrectListLen at {path}", path="ethcore/transaction/src/transaction.rs");
+                            println!("[iolite]Provided {} values, expected {}(Iolite TXs), {}(Iolite client TX) or {}(Eth TXs)",
                                      num_rlp_items,
                                      RLP_IOLITE_NUM_ITEMS, num_rlp_items_iolite_client, RLP_ETH_NUM_ITEMS);
                             return Err(DecoderError::RlpIncorrectListLen);
@@ -559,6 +563,14 @@ impl SignedTransaction {
 	pub fn deconstruct(self) -> (UnverifiedTransaction, Address, Option<Public>) {
 		(self.transaction, self.sender, self.public)
 	}
+
+        /// IOLITE: copies metadata to data. Useful for metadata execution
+        pub fn get_copy_with_metadata_equals_data(&self) -> SignedTransaction {
+            //let data = self.transaction.unsigned.metadata.clone();
+            let mut tx = self.clone();
+            tx.transaction.unsigned.data = tx.transaction.unsigned.metadata.clone();
+            tx
+        }
 }
 
 /// Signed Transaction that is a part of canon blockchain.

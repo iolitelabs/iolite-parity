@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use types::metalogs::MetaLogs;
 use ethereum_types::{U256, Address};
-use state::{State, Backend as StateBackend};
+use state::{State, Backend as StateBackend, CleanupMode};
 
 use meta::base_meta_payer::{BaseMetaPayer, MetaPay, MetaPayable, PaymentOptions};
 use meta::meta_util::{MetaUtilError};
@@ -29,17 +29,17 @@ impl<'a, T: 'a + StateBackend> Deref for SimpleMetaPayer<'a, T> {
     }
 }
 
-impl<'a, T: 'a + StateBackend> MetaPay for SimpleMetaPayer<'a, T> {
+impl<'a, T: 'a + StateBackend> MetaPay<'a> for SimpleMetaPayer<'a, T> {
     // return (sum, gas_left)
-    fn pay(&self, gas: u64) -> Result<(U256, u64), Err> {
+    fn pay(&'a mut self, gas: u64) -> Result<(U256, u64), String> {
         let sum = match self.can_pay() {
             PaymentOptions::CanPay(amount) => amount,
-            _ => return MetaUtilError::InsufficientFunds,
+            _ => return Err(MetaUtilError::InsufficientFunds.to_string()),
         };
 
         for log in self.meta_logs.logs() {
-            self.vm_state.add_balance(log.recipient, log.amount);
-            self.vm_state.sub_balance(self.payer.from, log.amount);
+            self.vm_state.add_balance(&log.recipient, &log.amount, CleanupMode::NoEmpty);
+            self.vm_state.sub_balance(&self.payer.from, &log.amount, &mut CleanupMode::NoEmpty);
         }
 
         Ok((sum, 0u64))

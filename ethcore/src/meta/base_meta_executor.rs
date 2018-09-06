@@ -11,16 +11,16 @@ pub struct BaseMetaExecutor {
     pub metadata: Bytes,
 }
 
-pub trait MetaExecute {
-    fn execute(&self) -> Result<MetaLogs, Err>;
+pub trait MetaExecute<'a> {
+    fn execute(&'a mut self) -> Result<MetaLogs, String>;
 }
 
 impl BaseMetaExecutor {
     // Computes the 'intrinsic gas' for a message with a given metadata.
     //TODO: <IOLITE> need to rework algorithm
-    pub fn intrinsic_gas(&self) -> Result<u64, Err> {
+    pub fn intrinsic_gas(&self) -> Result<u64, String> {
         if self.metadata.len() == 0 {
-            return Err("[iolite] Error! Metadata is empty.");
+            return Err("[iolite] Error! Metadata is empty.".to_string());
         }
 
         //TODO: <IOLITE> don't use hardcoded values as
@@ -34,20 +34,20 @@ impl BaseMetaExecutor {
         // Zero and non-zero bytes are priced differently
         let num_non_zero_bytes : u64 = self.metadata
             .iter()
-            .filter(|byte| byte != 0u8)
+            .filter(|&&byte| byte != 0u8)
             .fold(0, |sum, &val| sum + 1);
 
 
         gas += num_non_zero_bytes * tx_data_non_zero_gas;
         // Make sure we don't exceed u64 for all data combinations
         if (u64::MAX - gas) / tx_data_non_zero_gas < num_non_zero_bytes {
-            return Err(VmError::OutOfGas);
+            return Err(VmError::OutOfGas.to_string());
         }
 
         let num_zero_bytes = (self.metadata.len() as u64) - num_non_zero_bytes;
         gas += num_zero_bytes * tx_data_zero_gas;
         if (u64::MAX - gas) / tx_data_zero_gas < num_zero_bytes {
-            return Err(VmError::OutOfGas);
+            return Err(VmError::OutOfGas.to_string());
         }
 
         return Ok(gas);
