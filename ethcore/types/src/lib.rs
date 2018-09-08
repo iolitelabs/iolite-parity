@@ -50,6 +50,7 @@ pub mod trace_filter;
 pub mod tree_route;
 pub mod verification_queue_info;
 pub mod metalogs;
+pub mod business_metadata;
 
 /// Type for block number.
 pub type BlockNumber = u64;

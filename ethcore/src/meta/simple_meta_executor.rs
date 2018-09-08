@@ -25,15 +25,17 @@ impl SimpleMetaExecutor {
     }
 }
 
-impl<'a> MetaExecute<'a> for SimpleMetaExecutor {
-    fn execute(&'a mut self) -> Result<MetaLogs, String> {
+impl MetaExecute for SimpleMetaExecutor {
+    fn execute(&mut self) -> Result<MetaLogs, String> {
         if self.metadata.len() == 0 {
+            println!("[iolite] Error! Metadata is empty.");
             return Err("[iolite] Error! Metadata is empty.".to_string());
         }
 
+        println!("Trying to decode metalogs.");
         let meta: MetaLogs = match rlp::decode(&self.metadata) {
             Ok(meta) => meta,
-            Err(err) => return Err(err.to_string()),
+            Err(err) => { println!("{}", err); return Err(err.to_string()) },
         };
 
         for log in meta.logs() {

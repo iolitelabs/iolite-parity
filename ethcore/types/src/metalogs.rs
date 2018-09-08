@@ -3,31 +3,37 @@
 //use serde::{Serialize};
 //use serde::ser::SerializeStruct;
 use ethereum_types::{U256, Address};
-use rlp::{self, RlpStream, DecoderError, Encodable};
+use rlp::{self};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MetaLogs {
-    //TODO: <IOLITE> should we own this value?
-    //logs: &[MetaLog],
     pub logs: Vec<MetaLog>,
 }
 
 impl rlp::Decodable for MetaLogs {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         if rlp.is_empty() {
-            Ok(MetaLogs { logs: vec![] })
-        } else {
-            Ok(rlp.as_val()?)
+            return Ok(MetaLogs { logs: vec![] });
         }
+
+        let mut metalogs = MetaLogs { logs: vec![], };
+        println!("Trying to get num items.");
+        let num_items = rlp.item_count()?;
+        println!("Num items {}", num_items);
+        for i in 0..num_items {
+            metalogs.logs.push(rlp.val_at(i)?);
+        }
+
+        Ok(metalogs)
     }
 }
 
 impl rlp::Encodable for MetaLogs {
     fn rlp_append(&self, s: &mut rlp::RlpStream) {
-        s.begin_list(1);
-        s.append(&vec![]);
-        // Need to implement rlp::Encodable for std::vec::Vec<metalogs::MetaLog>
-        //s.append(&self.logs);
+        s.begin_list(self.logs.len());
+        for log in &self.logs {
+            s.append(log);
+        }
     }
 }
 
@@ -38,9 +44,12 @@ impl MetaLogs {
         }
     }
 
-    // Will fail on compile
     pub fn logs(&self) -> &[MetaLog] {
         &self.logs
+    }
+
+    pub fn mut_logs(&mut self) -> &[MetaLog] {
+        &mut self.logs
     }
 
     pub fn push(&mut self, recipient: Address, amount: U256) {
@@ -51,7 +60,6 @@ impl MetaLogs {
 //TODO: Implement Iterator for MetaLogs
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-//TODO: <IOLITE> need to implement rlp::Encodable for this field
 pub struct MetaLog {
     #[serde(rename="to")]
     pub recipient: Address,

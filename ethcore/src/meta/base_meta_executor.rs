@@ -11,8 +11,8 @@ pub struct BaseMetaExecutor {
     pub metadata: Bytes,
 }
 
-pub trait MetaExecute<'a> {
-    fn execute(&'a mut self) -> Result<MetaLogs, String>;
+pub trait MetaExecute {
+    fn execute(&mut self) -> Result<MetaLogs, String>;
 }
 
 impl BaseMetaExecutor {
@@ -35,7 +35,7 @@ impl BaseMetaExecutor {
         let num_non_zero_bytes : u64 = self.metadata
             .iter()
             .filter(|&&byte| byte != 0u8)
-            .fold(0, |sum, &val| sum + 1);
+            .fold(0, |sum, /*&*/_val| sum + 1);
 
 
         gas += num_non_zero_bytes * tx_data_non_zero_gas;

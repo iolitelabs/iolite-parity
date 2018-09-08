@@ -62,7 +62,7 @@ impl MetaPayable for BaseMetaPayer {
         }
 
         for log in self.meta_logs.logs() {
-            sum.add(log.amount);
+            sum = sum.add(log.amount);
         }
 
         info!("[iolite] CanPay sum={}, metaLimit={}", sum, self.meta_limit);

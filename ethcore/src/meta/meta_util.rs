@@ -4,9 +4,9 @@ use types::metalogs::MetaLogs;
 use transaction::{SignedTransaction};
 use ethereum_types::{U256, Address};
 use executive::Executive;
-use state::{State, Backend as StateBackend};
+use state::{Backend as StateBackend};
 
-use meta::base_meta_payer::{BaseMetaPayer, PaymentOptions, MetaPayable};
+use meta::base_meta_payer::{PaymentOptions, MetaPayable};
 use meta::simple_meta_payer::SimpleMetaPayer;
 use meta::business_meta_payer::BusinessMetaPayer;
 use meta::base_meta_executor::MetaExecute;
@@ -40,18 +40,23 @@ impl fmt::Display for MetaUtilError {
     }
 }
 
-pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata: Bytes, meta_limit: U256, read_evm: &'a mut State<T>)//read_evm: Executive)
+pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata: Bytes, meta_limit: U256, read_evm: &'a mut Executive<'a, T>)//read_evm: Executive)
         // return (payer, meta_logs, payment, intrinsic_gas)
         -> Result<(SimpleMetaPayer<'a, T>, MetaLogs, U256, u64), String/*MetaUtilError*/> {
     println!("[iolite] UnpackSimpleMetadata. Metalimit={}", meta_limit);
-    let executor = SimpleMetaExecutor::new(metadata);
+
+    let mut executor = SimpleMetaExecutor::new(metadata);
+    println!("Created executor successfully");
 
     //TODO: <IOLITE> do we really need this?
     let executor_gas = executor.intrinsic_gas()?;
+    println!("Intrinsic gas successfully");
 
     let meta_logs = executor.execute()?;
+    println!("Executed successfully");
 
-    let payer = SimpleMetaPayer::new(from, meta_logs, meta_limit, read_evm);
+    //TODO: <Kirill A> get rid of clonning metalogs. Use reference of metalogs in payers instead.
+    let payer = SimpleMetaPayer::new(from, meta_logs.clone(), meta_limit, read_evm);
     //TODO: <IOLITE> do we really need this?
     let payer_gas = payer.intrinsic_gas()?;
 
@@ -79,14 +84,15 @@ pub fn unpack_business_metadata<'a, T: 'a + StateBackend>(from: Address, metadat
         -> Result<(BusinessMetaPayer<'a, T>, MetaLogs, U256, u64), String/*MetaUtilError*/> {
     println!("[iolite] UnpackBusinessMetadata. Metalimit={}", meta_limit);
 
-    let executor = BusinessMetaExecutor::new(metadata, transaction, from, read_evm);
+    let mut executor = BusinessMetaExecutor::new(metadata, transaction, from, read_evm);
 
     //TODO: <IOLITE> do we really need this?
     let executor_gas = executor.intrinsic_gas()?;
 
     let meta_logs = executor.execute()?;
 
-    let payer = BusinessMetaPayer::new(from, meta_logs, meta_limit, transaction, write_evm);
+    //TODO: <Kirill A> get rid of clonning metalogs. Use reference of metalogs in payers instead.
+    let payer = BusinessMetaPayer::new(from, meta_logs.clone(), meta_limit, transaction, write_evm);
     //TODO: <IOLITE> do we really need this?
     let payer_gas = payer.intrinsic_gas()?;
 

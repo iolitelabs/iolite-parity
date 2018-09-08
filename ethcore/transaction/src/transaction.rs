@@ -416,6 +416,11 @@ impl UnverifiedTransaction {
 		&self.unsigned
 	}
 
+	/// IOLITE: get mut reference to unsigned part of this transaction.
+	pub fn _as_mut_unsigned(&mut self) -> &mut Transaction {
+	    &mut self.unsigned
+        }
+
 	pub fn standard_v(&self) -> u8 { signature::check_replay_protection(self.v) }
 
 	/// The `v` value that appears in the RLP.
@@ -564,12 +569,22 @@ impl SignedTransaction {
 		(self.transaction, self.sender, self.public)
 	}
 
+	/// IOLITE: Get mutable reference to unverified transaction
+	pub fn _as_mut_unverified_tx(&mut self) -> &mut UnverifiedTransaction {
+	    &mut self.transaction
+        }
+
         /// IOLITE: copies metadata to data. Useful for metadata execution
         pub fn get_copy_with_metadata_equals_data(&self) -> SignedTransaction {
             //let data = self.transaction.unsigned.metadata.clone();
             let mut tx = self.clone();
             tx.transaction.unsigned.data = tx.transaction.unsigned.metadata.clone();
             tx
+        }
+
+        /// IOLITE: changes sender
+        pub fn _set_sender(&mut self, sender: Address) {
+            self.sender = sender;
         }
 }
 

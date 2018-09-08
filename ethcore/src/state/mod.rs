@@ -781,12 +781,23 @@ impl<B: Backend> State<B> {
                     }
 		};
 
+		if t.metadata.len() == 0 {
+                    info!("[iolite] Metadata is empty.");
+                    //return main_transact_result;
+                }
+
 		self.checkpoint();
 		//let mut read_only_state = self.create_copy();
 		//let mut read_only_e = Executive::new(read_only_state, env_info, machine);
                 {
 		    let mut read_only_e = Executive::new(self, env_info, machine);
-                    unpack_simple_metadata(t.sender(), t.metadata, t.metadataLimit, &mut read_only_e);
+                    match unpack_simple_metadata(t.sender(), t.metadata.clone(), t.metadataLimit, &mut read_only_e) {
+                        Ok(_) => println!("Simple metadata processed successfully!"),
+                        Err(e) => {
+                            println!("{}", e);
+                            //return Err(ExecutionError::Internal(e));
+                        }
+                    };
                 }
 		//TODO <IOLITE>: add UnpackBusinessMetadata call here
 		//unpack_business_metadata(t.sender, t.metadata, t.metadataLimit, t,
