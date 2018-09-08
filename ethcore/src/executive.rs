@@ -183,6 +183,11 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 		}
 	}
 
+        /// Get mutable state.
+        pub fn _get_mut_state(&'a mut self) -> &'a mut State<B> {
+            &mut self.state
+        }
+
 	/// Populates executive from parent properties. Increments executive depth.
 	pub fn from_parent(state: &'a mut State<B>, info: &'a EnvInfo, machine: &'a Machine, parent_depth: usize, static_flag: bool) -> Self {
 		Executive {
@@ -209,7 +214,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 	}
 
 	/// This function should be used to execute transaction.
-	pub fn transact<T, V>(&'a mut self, t: &SignedTransaction, options: TransactOptions<T, V>)
+	pub fn transact<T, V>(&mut self, t: &SignedTransaction, options: TransactOptions<T, V>)
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: Tracer, V: VMTracer,
 	{
 		self.transact_with_tracer(t, options.check_nonce, options.output_from_init_contract, options.tracer, options.vm_tracer)
@@ -218,7 +223,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 	/// Execute a transaction in a "virtual" context.
 	/// This will ensure the caller has enough balance to execute the desired transaction.
 	/// Used for extra-block executions for things like consensus contracts and RPCs
-	pub fn transact_virtual<T, V>(&'a mut self, t: &SignedTransaction, options: TransactOptions<T, V>)
+	pub fn transact_virtual<T, V>(&mut self, t: &SignedTransaction, options: TransactOptions<T, V>)
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: Tracer, V: VMTracer,
 	{
 	        println!("Transact_virtual() called.");
@@ -235,13 +240,14 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 
 	/// Execute transaction/call with tracing enabled
 	fn transact_with_tracer<T, V>(
-		&'a mut self,
+		&mut self,
 		t: &SignedTransaction,
 		check_nonce: bool,
 		output_from_create: bool,
 		mut tracer: T,
 		mut vm_tracer: V
 	) -> Result<Executed<T::Output, V::Output>, ExecutionError> where T: Tracer, V: VMTracer {
+	        println!("[transact_with_tracer] at {path}", path="ethcore/src/executive.rs");
 		let sender = t.sender();
 		let nonce = self.state.nonce(&sender)?;
 
@@ -381,6 +387,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 		tracer: &mut T,
 		vm_tracer: &mut V
 	) -> vm::Result<FinalizationResult> where T: Tracer, V: VMTracer {
+                println!("[Executive::call] at {path}", path="ethcore/src/executive.rs:line 377");
+                println!("[Executive::call](params={:?}) self.env_info={:?}, static={}",
+                        params, self.info, self.static_flag);
 
 		trace!("Executive::call(params={:?}) self.env_info={:?}, static={}", params, self.info, self.static_flag);
 		if (params.call_type == CallType::StaticCall ||
