@@ -33,8 +33,8 @@ impl<'a, T: 'a + StateBackend> Deref for BusinessMetaPayer<'a, T> {
     }
 }
 
-impl<'a, T: 'a + StateBackend> MetaPay<'a> for BusinessMetaPayer<'a, T> {
-    fn pay(&'a mut self, gas: u64) -> Result<(U256, u64), String> {
+impl<'a, T: 'a + StateBackend> MetaPay for BusinessMetaPayer<'a, T> {
+    fn pay(&mut self, gas: u64) -> Result<(U256, u64), String> {
         if self.payer.meta_logs.logs().len() != 1 {
             return Err("Only one recipient is allowed for business call".to_string());
         }
@@ -50,7 +50,7 @@ impl<'a, T: 'a + StateBackend> MetaPay<'a> for BusinessMetaPayer<'a, T> {
     }
 }
 
-fn try_pay<'a, T: 'a + StateBackend>(from: Address, log: &MetaLog, transaction: &'a SignedTransaction, evm: &'a mut Executive<'a, T>, gas: u64) -> Result<u64, String> {
+fn try_pay<'a, T: 'a + StateBackend>(from: Address, log: &MetaLog, transaction: &SignedTransaction, evm: &mut Executive<'a, T>, gas: u64) -> Result<u64, String> {
     let mut gas_left = gas;
     let transact_options = TransactOptions::with_tracing_and_vm_tracing();
     let mut tx = transaction.clone();

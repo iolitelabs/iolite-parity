@@ -16,8 +16,8 @@ pub trait MetaPayable {
     fn can_pay(&self) -> PaymentOptions;
 }
 
-pub trait MetaPay<'a> {
-    fn pay(&'a mut self, gas: u64) -> Result<(U256, u64), String>;
+pub trait MetaPay {
+    fn pay(&mut self, gas: u64) -> Result<(U256, u64), String>;
 }
 
 pub enum PaymentOptions {

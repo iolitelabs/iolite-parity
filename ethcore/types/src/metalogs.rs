@@ -59,11 +59,11 @@ impl MetaLogs {
 
 //TODO: Implement Iterator for MetaLogs
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]//, Serialize)]
 pub struct MetaLog {
-    #[serde(rename="to")]
+    //#[serde(rename="to")]
     pub recipient: Address,
-    #[serde(rename="value")]
+    //#[serde(rename="value")]
     pub amount: U256,
 }
 

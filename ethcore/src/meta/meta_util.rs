@@ -6,7 +6,7 @@ use ethereum_types::{U256, Address};
 use executive::Executive;
 use state::{Backend as StateBackend};
 
-use meta::base_meta_payer::{PaymentOptions, MetaPayable};
+use meta::base_meta_payer::{PaymentOptions, MetaPayable, MetaPay};
 use meta::simple_meta_payer::SimpleMetaPayer;
 use meta::business_meta_payer::BusinessMetaPayer;
 use meta::base_meta_executor::MetaExecute;
@@ -46,23 +46,25 @@ pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata:
     println!("[iolite] UnpackSimpleMetadata. Metalimit={}", meta_limit);
 
     let mut executor = SimpleMetaExecutor::new(metadata);
-    println!("Created executor successfully");
 
     //TODO: <IOLITE> do we really need this?
     let executor_gas = executor.intrinsic_gas()?;
-    println!("Intrinsic gas successfully");
 
     let meta_logs = executor.execute()?;
-    println!("Executed successfully");
 
     //TODO: <Kirill A> get rid of clonning metalogs. Use reference of metalogs in payers instead.
-    let payer = SimpleMetaPayer::new(from, meta_logs.clone(), meta_limit, read_evm);
+    let mut payer = SimpleMetaPayer::new(from, meta_logs.clone(), meta_limit, read_evm);
     //TODO: <IOLITE> do we really need this?
     let payer_gas = payer.intrinsic_gas()?;
 
     let payment = match payer.can_pay() {
-        PaymentOptions::CanPay(payment) => payment,
+        PaymentOptions::CanPay(payment, ) => payment,
         PaymentOptions::CantPay => return Err(MetaUtilError::InsufficientFunds.to_string()),
+    };
+
+    let payment = match payer.pay(payer_gas) {
+        Ok((paid_amount, _)) => paid_amount,
+        _ => return Err(MetaUtilError::InsufficientFunds.to_string()),
     };
 
     //TODO: <IOLITE> do we really need this?

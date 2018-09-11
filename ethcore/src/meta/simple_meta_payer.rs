@@ -30,9 +30,9 @@ impl<'a, T: 'a + StateBackend> Deref for SimpleMetaPayer<'a, T> {
     }
 }
 
-impl<'a, T: 'a + StateBackend> MetaPay<'a> for SimpleMetaPayer<'a, T> {
+impl<'a, T: 'a + StateBackend> MetaPay for SimpleMetaPayer<'a, T> {
     // return (sum, gas_left)
-    fn pay(&'a mut self, _gas: u64) -> Result<(U256, u64), String> {
+    fn pay(&mut self, _gas: u64) -> Result<(U256, u64), String> {
         let sum = match self.can_pay() {
             PaymentOptions::CanPay(amount) => amount,
             _ => return Err(MetaUtilError::InsufficientFunds.to_string()),

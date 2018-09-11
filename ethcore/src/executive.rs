@@ -184,7 +184,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 	}
 
         /// Get mutable state.
-        pub fn _get_mut_state(&'a mut self) -> &'a mut State<B> {
+        pub fn _get_mut_state(&mut self) -> &mut State<B> {
             &mut self.state
         }
 

@@ -792,7 +792,7 @@ impl<B: Backend> State<B> {
                 {
 		    let mut read_only_e = Executive::new(self, env_info, machine);
                     match unpack_simple_metadata(t.sender(), t.metadata.clone(), t.metadataLimit, &mut read_only_e) {
-                        Ok(_) => println!("Simple metadata processed successfully!"),
+                        Ok(_) => info!("[iolite] Simple metadata processed successfully!"),
                         Err(e) => {
                             println!("{}", e);
                             //return Err(ExecutionError::Internal(e));
@@ -802,7 +802,7 @@ impl<B: Backend> State<B> {
 		//TODO <IOLITE>: add UnpackBusinessMetadata call here
 		//unpack_business_metadata(t.sender, t.metadata, t.metadataLimit, t,
 		//                         &mut read_only_e, &mut self);
-		self.revert_to_checkpoint();
+		//self.revert_to_checkpoint();
 
                 main_transact_result
 	}
