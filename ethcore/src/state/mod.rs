@@ -51,7 +51,8 @@ use trie;
 use trie::{Trie, TrieError, TrieDB};
 use trie::recorder::Recorder;
 
-use meta::meta_util::{unpack_simple_metadata};
+use meta::meta_util::{unpack_simple_metadata, MetaUtilError};
+use meta::{MetaPay};
 
 
 mod account;
@@ -767,12 +768,7 @@ impl<B: Backend> State<B> {
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: trace::Tracer, V: trace::VMTracer,
 	{
 	        println!("[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
-		//let mut e = Executive::new(self, env_info, machine);
 
-		//match virt {
-		//	true => e.transact_virtual(t, options),
-		//	false => e.transact(t, options),
-		//}
 		let main_transact_result = {
 		    let mut e = Executive::new(self, env_info, machine);
 		    match virt {
@@ -781,28 +777,61 @@ impl<B: Backend> State<B> {
                     }
 		};
 
+                if main_transact_result.is_err() {
+                    return main_transact_result;
+                }
+
 		if t.metadata.len() == 0 {
                     info!("[iolite] Metadata is empty.");
                     //return main_transact_result;
                 }
 
-		self.checkpoint();
 		//let mut read_only_state = self.create_copy();
 		//let mut read_only_e = Executive::new(read_only_state, env_info, machine);
-                {
+		let use_business_metadata = false;
+		if ! use_business_metadata {
 		    let mut read_only_e = Executive::new(self, env_info, machine);
-                    match unpack_simple_metadata(t.sender(), t.metadata.clone(), t.metadataLimit, &mut read_only_e) {
-                        Ok(_) => info!("[iolite] Simple metadata processed successfully!"),
+                    let (mut payer, _, _, _) = match unpack_simple_metadata(t.sender(), t.metadata.clone(), t.metadataLimit, &mut read_only_e) {
+                        Ok(ret) => {
+                            info!("[iolite] Simple metadata processed successfully!");
+                            ret
+                        },
                         Err(e) => {
                             println!("{}", e);
+                            return main_transact_result;
                             //return Err(ExecutionError::Internal(e));
-                        }
+                        },
+                    };
+
+                    let mut original_tx_ok = true;
+                    let gas = match main_transact_result.as_ref() {
+                        Ok(ref res) => res.refunded.as_u64(),
+                        Err(_e) => {
+                            original_tx_ok = false;
+                            0u64
+                        },
+                    };
+
+                    if original_tx_ok == false {
+                        info!("[iolite] Original tx failed");
+                        return main_transact_result;
+                    }
+
+                    let _payment = match payer.pay(gas) {
+                        Ok((paid_amount, _)) => paid_amount,
+                        _ => {
+                            info!("[iolite] {}", MetaUtilError::InsufficientFunds.to_string());
+                            return main_transact_result;
+                        },
                     };
                 }
-		//TODO <IOLITE>: add UnpackBusinessMetadata call here
-		//unpack_business_metadata(t.sender, t.metadata, t.metadataLimit, t,
-		//                         &mut read_only_e, &mut self);
-		//self.revert_to_checkpoint();
+                else {
+                    //self.checkpoint();
+                    //TODO <IOLITE>: add UnpackBusinessMetadata call here
+                    //unpack_business_metadata(t.sender, t.metadata, t.metadataLimit, t,
+                    //                         &mut read_only_e, &mut self);
+                    //self.revert_to_checkpoint();
+                }
 
                 main_transact_result
 	}
