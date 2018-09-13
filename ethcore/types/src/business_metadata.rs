@@ -44,7 +44,7 @@ pub struct Metadata {
 impl rlp::Decodable for Metadata {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         if rlp.is_empty() {
-            return Err(rlp::DecoderError::Custom("Can't decode metadata from given rlp."));
+            return Err(rlp::DecoderError::Custom("Can't decode business metadata from given rlp."));
         }
 
         let metadata = Metadata {

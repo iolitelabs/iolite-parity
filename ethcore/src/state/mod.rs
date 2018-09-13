@@ -51,8 +51,9 @@ use trie;
 use trie::{Trie, TrieError, TrieDB};
 use trie::recorder::Recorder;
 
-use meta::meta_util::{unpack_simple_metadata, MetaUtilError};
-use meta::{MetaPay};
+use meta::meta_util::{*};
+use meta::{MetaPay, BusinessMetaPayer};
+use types::metalogs::{MetaLogs};
 
 
 mod account;
@@ -767,37 +768,43 @@ impl<B: Backend> State<B> {
 	fn execute<T, V>(&mut self, env_info: &EnvInfo, machine: &Machine, t: &SignedTransaction, options: TransactOptions<T, V>, virt: bool)
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: trace::Tracer, V: trace::VMTracer,
 	{
-	        println!("[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
+            println!("[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
 
-		let main_transact_result = {
-		    let mut e = Executive::new(self, env_info, machine);
-		    match virt {
-			true => e.transact_virtual(t, options),
-			false => e.transact(t, options),
+                let main_transact_result = {
+                    let mut e = Executive::new(self, env_info, machine);
+                    match virt {
+                        true => e.transact_virtual(t, options),
+                        false => e.transact(t, options),
                     }
-		};
+                };
 
                 if main_transact_result.is_err() {
                     return main_transact_result;
                 }
 
-		if t.metadata.len() == 0 {
+                if t.metadata.len() == 0 {
                     info!("[iolite] Metadata is empty.");
                     //return main_transact_result;
                 }
 
-		//let mut read_only_state = self.create_copy();
-		//let mut read_only_e = Executive::new(read_only_state, env_info, machine);
-		let use_business_metadata = false;
-		if ! use_business_metadata {
-		    let mut read_only_e = Executive::new(self, env_info, machine);
-                    let (mut payer, _, _, _) = match unpack_simple_metadata(t.sender(), t.metadata.clone(), t.metadataLimit, &mut read_only_e) {
+                //let mut read_only_state = self.create_copy();
+                //let mut read_only_e = Executive::new(read_only_state, env_info, machine);
+                self.checkpoint();
+                let use_business_metadata = true;
+                if ! use_business_metadata {
+                    let mut read_only_executive = Executive::new(self, env_info, machine);
+                    let (mut payer, _, _, _)
+                        = match unpack_simple_metadata(t.sender(),
+                                                       t.metadata.clone(),
+                                                       t.metadataLimit,
+                                                       &mut read_only_executive)
+                    {
                         Ok(ret) => {
                             info!("[iolite] Simple metadata processed successfully!");
                             ret
                         },
                         Err(e) => {
-                            println!("{}", e);
+                            info!("[iolite] {}", e);
                             return main_transact_result;
                             //return Err(ExecutionError::Internal(e));
                         },
@@ -826,11 +833,142 @@ impl<B: Backend> State<B> {
                     };
                 }
                 else {
-                    //self.checkpoint();
-                    //TODO <IOLITE>: add UnpackBusinessMetadata call here
-                    //unpack_business_metadata(t.sender, t.metadata, t.metadataLimit, t,
-                    //                         &mut read_only_e, &mut self);
-                    //self.revert_to_checkpoint();
+                    // We can't neither copy the state itself nor create two simultaneous borrows
+                    // to the single executive (or 2 executives having the same state as a
+                    // resource). Thus we use checkpoints to pretend it like "read only" evm.
+                    self.checkpoint();
+                    let mut error_occured = false;
+                    let mut error_which_occured = String::new();
+                    let mut meta_logs = MetaLogs::new();
+                    let mut executor_gas = 0u64;
+                    {
+                        let mut read_only_executive = Executive::new(self, env_info, machine);
+                        let res = unpack_business_metadata(t.sender(),
+                                                           t.metadata.clone(),
+                                                           t,
+                                                           &mut read_only_executive);
+                        let ret = match res {
+                            Ok(ret) => ret,
+                            Err(e) => {
+                                error_which_occured = e.to_string();
+                                error_occured = true;
+                                (MetaLogs::new(), 0u64)
+                            },
+                        };
+                        meta_logs = ret.0;
+                        executor_gas = ret.1;
+                    }
+                    if error_occured {
+                        info!("[iolite] {}", error_which_occured);
+                        self.revert_to_checkpoint();
+                        return main_transact_result
+                    }
+                    info!("[iolite] Successfully unpacked business metadata.");
+                    error_occured = false;
+                    error_which_occured = String::new();
+
+                    {
+                        let mut read_only_executive = Executive::new(self, env_info, machine);
+                        // If the business contract call is not correct, then the transaction
+                        // will be considered a failure, but the logic of the pure transaction
+                        // will be executed
+                        let mut try_payer = BusinessMetaPayer::new(t.sender(),
+                                                                   meta_logs.clone(),
+                                                                   t.metadataLimit,
+                                                                   t,
+                                                                   &mut read_only_executive);
+                        //TODO: <IOLITE> Replace t.gas with metagas
+                        match try_payer.pay(t.gas.as_u64()) {
+                            Ok(_) => info!("[iolite] Test payer succeeded."),
+                            Err(e) => {
+                                error_which_occured = e;
+                                error_occured = true;
+                            }
+                        };
+                    }
+                    if error_occured {
+                        info!("[iolite] {}", error_which_occured);
+                        self.revert_to_checkpoint();
+                        return main_transact_result
+                    }
+                    self.revert_to_checkpoint();
+                    error_occured = false;
+                    error_which_occured = String::new();
+
+
+                    self.checkpoint();
+                    // Used for `break` only
+                    loop {
+                        let mut write_executive = Executive::new(self, env_info, machine);
+                        //TODO: <Kirill A> get rid of clonning metalogs. Use reference of metalogs in payers instead.
+                        let res = prepare_business_meta_payer(t.sender(),
+                                                              t.metadataLimit,
+                                                              meta_logs.clone(),
+                                                              executor_gas,
+                                                              t,
+                                                              &mut write_executive);
+                        let (mut payer, payment, meta_gas) = match res {
+                                Ok(res) => {
+                                    res
+                                },
+                                Err(e) => {
+                                    error_occured = true;
+                                    error_which_occured = e;
+                                    break;
+                                }
+                        };
+
+                        let pure_tx_gas_used = match main_transact_result.as_ref() {
+                            Ok(ref res) => res.gas_used.as_u64(),
+                            Err(e) => {
+                                println!("[iolite] Main transaction failed before. This should never occur.");
+                                error_occured = true;
+                                error_which_occured = e.to_string();
+                                break;
+                            },
+                        };
+
+                        if ! error_occured {
+                            info!("[iolite] Successfully prepared business meta payer.");
+                            info!("[iolite] payer.Pay.before | Gas: {}", pure_tx_gas_used);
+                            let (_, gas_left) = match payer.pay(meta_gas) {
+                                Ok(ret) => ret,
+                                Err(e) => {
+                                    error_occured = true;
+                                    error_which_occured = e;
+                                    break;
+                                }
+                            };
+
+                            if ! error_occured {
+                                info!("[iolite] payer.Pay.after | Gas left: {}", gas_left);
+                            }
+                            //TODO: <IOLITE> check if the formula correct
+                            let meta_gas_used = meta_gas - gas_left;
+                            info!("[iolite] Metagas used: {}", meta_gas_used);
+                        }
+                        break;
+                    }
+                    if error_occured {
+                        info!("[iolite] {}", error_which_occured);
+                        self.revert_to_checkpoint();
+                        return main_transact_result
+                    }
+                    info!("[iolite] BusinessMetaPayer prepared successfully.");
+                    self.discard_checkpoint();
+
+                    //TODO: <IOLITE> txGas in Geth is obtained by intrinsic_gas() call, but we
+                    // don't have such a method here.
+                    //// let gas = tx_gas + meta_gas
+                    //let gas = meta_gas;
+
+                    //TODO: <IOLITE> This is simillar to the geth's code. See the problem above.
+                    //// Make sure we don't exceed uint64
+                    //if gas < tx_gas {
+                    //    ExecutionError::NotEnoughBaseGas(txGas, gas);
+                    //}
+                    //info!("[iolite] Apply message. Gas: {gas}; MetaGas: {meta_gas}, Full gas: {full_gas}",
+                    //      gas=tx_gas, meta_gas=meta_gas, full_gas=gas);
                 }
 
                 main_transact_result

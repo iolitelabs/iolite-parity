@@ -1,7 +1,7 @@
 //TODO: <IOLITE> copyright
 use std::ops::Deref;
 use executive::{Executive, TransactOptions};
-use transaction::{SignedTransaction};
+use transaction::{SignedTransaction, Action};
 use ethereum_types::{U256, Address};
 use state::{Backend as StateBackend};
 use rlp::{self};
@@ -50,7 +50,12 @@ impl<'a, B: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, B> {
         info!("[iolite] Business metadata: {:#?}", business_metadata);
 
         //TODO: Copy fields from business metadata to tx
-        let tx = self.transaction.get_copy_with_metadata_equals_data();
+        let mut tx = self.transaction.get_copy_with_data_equals(&business_metadata.input);
+        tx._set_sender(self.from);
+        tx._add_nonce(1u64);
+        // Increment nonce
+        tx._as_mut_unverified_tx()._as_mut_unsigned().action = Action::Call(business_metadata.business);
+
         let transact_options = TransactOptions::with_no_tracing();//with_tracing_and_vm_tracing();
         let result = match self.read_evm.transact_virtual(&tx, transact_options) {
             Ok(executed_result) => executed_result,

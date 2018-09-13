@@ -574,12 +574,17 @@ impl SignedTransaction {
 	    &mut self.transaction
         }
 
-        /// IOLITE: copies metadata to data. Useful for metadata execution
-        pub fn get_copy_with_metadata_equals_data(&self) -> SignedTransaction {
+        /// IOLITE: copies new_data to data. Useful for metadata execution
+        pub fn get_copy_with_data_equals(&self, new_data: &[u8]) -> SignedTransaction {
             //let data = self.transaction.unsigned.metadata.clone();
             let mut tx = self.clone();
-            tx.transaction.unsigned.data = tx.transaction.unsigned.metadata.clone();
+            tx.transaction.unsigned.data = new_data.to_vec();
             tx
+        }
+
+        /// IOLITE: we can use multiple transactions when process metadata, so could be useful
+        pub fn _add_nonce(&mut self, nonce: u64) {
+            self.transaction.unsigned.nonce = self.transaction.unsigned.nonce + U256::from(nonce);
         }
 
         /// IOLITE: changes sender
