@@ -15,6 +15,7 @@ pub struct BusinessMetaExecutor<'a, B: 'a + StateBackend> {
 
     transaction: &'a SignedTransaction,
     from: Address,
+    nonce: u64,
     read_evm: &'a mut Executive<'a, B>,
 }
 
@@ -27,12 +28,13 @@ impl<'a, B: 'a + StateBackend> Deref for BusinessMetaExecutor<'a, B> {
 }
 
 impl<'a, B: 'a + StateBackend> BusinessMetaExecutor<'a, B> {
-    pub fn new(metadata: Bytes, transaction: &'a SignedTransaction, from: Address, read_evm: &'a mut Executive<'a, B>)
+    pub fn new(metadata: Bytes, transaction: &'a SignedTransaction, from: Address, nonce: u64, read_evm: &'a mut Executive<'a, B>)
             -> Self {
         BusinessMetaExecutor {
             executor: BaseMetaExecutor { metadata: metadata },
             transaction: transaction,
             from: from,
+            nonce: nonce,
             read_evm: read_evm,
         }
     }
@@ -47,12 +49,12 @@ impl<'a, B: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, B> {
         //TODO: <IOLITE> implement BusinessMetadata
         let business_metadata: BusinessMetadata = rlp::decode(&self.metadata)
             .map_err(|err| err.to_string())?;
-        info!("[iolite] Business metadata: {:#?}", business_metadata);
+        info!("[iolite-detail] Business metadata: {:#?}", business_metadata);
 
         //TODO: Copy fields from business metadata to tx
         let mut tx = self.transaction.get_copy_with_data_equals(&business_metadata.input);
         tx._set_sender(self.from);
-        tx._add_nonce(1u64);
+        tx._set_nonce(self.nonce);
         // Increment nonce
         tx._as_mut_unverified_tx()._as_mut_unsigned().action = Action::Call(business_metadata.business);
 

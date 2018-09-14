@@ -20,7 +20,7 @@ impl Deref for BusinessMetadata {
 impl rlp::Decodable for BusinessMetadata {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
         Ok(BusinessMetadata {
-            data: rlp.val_at(0)?,
+            data: rlp.as_val()?,
         })
     }
 }
@@ -32,11 +32,11 @@ impl rlp::Encodable for BusinessMetadata {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]//, Serialize)]
 pub struct Metadata {
-    #[serde(rename="to")]
+    //#[serde(rename="to")]
     pub business: Address,
-    #[serde(rename="input")]
+    //#[serde(rename="input")]
     pub input: Bytes,
 }
 

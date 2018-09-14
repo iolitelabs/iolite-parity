@@ -583,8 +583,14 @@ impl SignedTransaction {
         }
 
         /// IOLITE: we can use multiple transactions when process metadata, so could be useful
-        pub fn _add_nonce(&mut self, nonce: u64) {
-            self.transaction.unsigned.nonce = self.transaction.unsigned.nonce + U256::from(nonce);
+        pub fn _set_nonce(&mut self, nonce: u64) {
+            self.transaction.unsigned.nonce = U256::from(nonce);
+        }
+
+        /// IOLITE: useful for needed processing to get/add nonce during multiple transaction
+        /// execution
+        pub fn _get_nonce(&self) -> u64 {
+            self.transaction.unsigned.nonce.as_u64()
         }
 
         /// IOLITE: changes sender

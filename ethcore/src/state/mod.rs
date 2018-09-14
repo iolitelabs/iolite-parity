@@ -768,7 +768,7 @@ impl<B: Backend> State<B> {
 	fn execute<T, V>(&mut self, env_info: &EnvInfo, machine: &Machine, t: &SignedTransaction, options: TransactOptions<T, V>, virt: bool)
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: trace::Tracer, V: trace::VMTracer,
 	{
-            println!("[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
+                println!("[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
 
                 let main_transact_result = {
                     let mut e = Executive::new(self, env_info, machine);
@@ -845,6 +845,7 @@ impl<B: Backend> State<B> {
                         let mut read_only_executive = Executive::new(self, env_info, machine);
                         let res = unpack_business_metadata(t.sender(),
                                                            t.metadata.clone(),
+                                                           t._get_nonce() + 1,
                                                            t,
                                                            &mut read_only_executive);
                         let ret = match res {
@@ -873,6 +874,7 @@ impl<B: Backend> State<B> {
                         // will be considered a failure, but the logic of the pure transaction
                         // will be executed
                         let mut try_payer = BusinessMetaPayer::new(t.sender(),
+                                                                   t._get_nonce() + 2,
                                                                    meta_logs.clone(),
                                                                    t.metadataLimit,
                                                                    t,
@@ -931,6 +933,7 @@ impl<B: Backend> State<B> {
                         if ! error_occured {
                             info!("[iolite] Successfully prepared business meta payer.");
                             info!("[iolite] payer.Pay.before | Gas: {}", pure_tx_gas_used);
+                            payer.nonce = t._get_nonce() + 1;
                             let (_, gas_left) = match payer.pay(meta_gas) {
                                 Ok(ret) => ret,
                                 Err(e) => {
@@ -940,9 +943,7 @@ impl<B: Backend> State<B> {
                                 }
                             };
 
-                            if ! error_occured {
-                                info!("[iolite] payer.Pay.after | Gas left: {}", gas_left);
-                            }
+                            info!("[iolite] payer.Pay.after | Gas left: {}", gas_left);
                             //TODO: <IOLITE> check if the formula correct
                             let meta_gas_used = meta_gas - gas_left;
                             info!("[iolite] Metagas used: {}", meta_gas_used);

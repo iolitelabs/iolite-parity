@@ -29,7 +29,7 @@ impl fmt::Display for MetaUtilError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let msg = match *self {
             MetaUtilError::InsufficientFunds => {
-                format!("insufficient funds for metadata payment or payment are not allowed.")
+                format!("insufficient funds for metadata payment or payment is not allowed.")
             },
             MetaUtilError::IntrinsicGasFailed => {
                 format!("Metadata intrinsic gas error.")
@@ -74,6 +74,7 @@ pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata:
 
 pub fn unpack_business_metadata<'a, T: 'a + StateBackend>(from: Address,
                                                           metadata: Bytes,
+                                                          nonce: u64,
                                                           transaction: &'a SignedTransaction,
                                                           read_evm: &'a mut Executive<'a, T>)
         // return (meta_logs, executor_gas)
@@ -81,7 +82,7 @@ pub fn unpack_business_metadata<'a, T: 'a + StateBackend>(from: Address,
 {
     info!("[iolite] Unpack business metadata.");
 
-    let mut executor = BusinessMetaExecutor::new(metadata, transaction, from, read_evm);
+    let mut executor = BusinessMetaExecutor::new(metadata, transaction, from, nonce, read_evm);
 
     //TODO: <IOLITE> do we really need this?
     let executor_gas = executor.intrinsic_gas()?;
@@ -101,7 +102,7 @@ pub fn prepare_business_meta_payer<'a, T: 'a + StateBackend>(from: Address,
 {
     info!("[iolite] Prepare business meta payer. Metalimit={}", meta_limit);
 
-    let payer = BusinessMetaPayer::new(from, meta_logs, meta_limit, transaction, write_evm);
+    let payer = BusinessMetaPayer::new(from, 0u64, meta_logs, meta_limit, transaction, write_evm);
     //TODO: <IOLITE> do we really need this?
     let payer_gas = payer.intrinsic_gas()?;
 
