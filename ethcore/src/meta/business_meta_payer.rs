@@ -62,7 +62,7 @@ fn try_pay<'a, T: 'a + StateBackend>(from: Address, nonce: u64, log: &MetaLog, t
     tx._as_mut_unverified_tx()._as_mut_unsigned().gas = U256::from(gas_left);
     tx._as_mut_unverified_tx()._as_mut_unsigned().data = vec![];
     tx._as_mut_unverified_tx()._as_mut_unsigned().action = Action::Call(log.recipient);
-    let result = match evm.transact_virtual(&tx, transact_options) {
+    let result = match evm.transact(&tx, transact_options) {
         Ok(executed_result) => executed_result,
         Err(e) => return Err(e.to_string()),
     };

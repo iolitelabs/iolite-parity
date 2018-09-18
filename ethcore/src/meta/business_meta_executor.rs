@@ -46,7 +46,6 @@ impl<'a, B: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, B> {
             return Err("Error! Metadata is empty.".to_string());
         }
 
-        //TODO: <IOLITE> implement BusinessMetadata
         let business_metadata: BusinessMetadata = rlp::decode(&self.metadata)
             .map_err(|err| err.to_string())?;
         info!("[iolite-detail] Business metadata: {:#?}", business_metadata);
@@ -55,7 +54,7 @@ impl<'a, B: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, B> {
         let mut tx = self.transaction.get_copy_with_data_equals(&business_metadata.input);
         tx._set_sender(self.from);
         tx._set_nonce(self.nonce);
-        // Increment nonce
+        tx._as_mut_unverified_tx()._as_mut_unsigned().value = U256::zero();
         tx._as_mut_unverified_tx()._as_mut_unsigned().action = Action::Call(business_metadata.business);
 
         let transact_options = TransactOptions::with_no_tracing();//with_tracing_and_vm_tracing();
@@ -70,8 +69,7 @@ impl<'a, B: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, B> {
         }
 
         let mut metalogs = MetaLogs::new();
-        //TODO: <IOLITE> should we convert address simillar to geth? `common.BytesToAddress(&result.output[:32])`
-        metalogs.push(Address::from(&result.output[..32]), U256::from(&result.output[32..]));
+        metalogs.push(Address::from(&result.output[12..32]), U256::from(&result.output[32..]));
 
         for data in metalogs.logs() {
             info!("[iolite] Decoded Metalogs. To: {}, Value: {}", data.recipient, data.amount);
