@@ -17,6 +17,7 @@ pub trait MetaPayable {
 }
 
 pub trait MetaPay {
+    // return (sum, gas_used)
     fn pay(&mut self, gas: u64) -> Result<(U256, u64), String>;
 }
 

@@ -46,9 +46,9 @@ impl<'a, T: 'a + StateBackend> MetaPay for BusinessMetaPayer<'a, T> {
             _ => return Err(MetaUtilError::InsufficientFunds.to_string()),
         };
 
-        let gas_left = try_pay(self.payer.from, self.nonce, &self.payer.meta_logs.logs()[0], self.transaction, self.evm, gas)?;
+        let gas_used = try_pay(self.payer.from, self.nonce, &self.payer.meta_logs.logs()[0], self.transaction, self.evm, gas)?;
 
-        Ok((sum, gas_left))
+        Ok((sum, gas_used))
     }
 }
 
@@ -68,7 +68,8 @@ fn try_pay<'a, T: 'a + StateBackend>(from: Address, nonce: u64, log: &MetaLog, t
     };
     //TODO: <IOLITE> is gas_left == refunded ?
     gas_left = result.refunded.as_u64(); // Will panic if number is larger then 2^64
-    info!("[iolite] TryPay gas={}; gas_left={}, gas_used={}", gas, gas_left, gas-gas_left);
+    let gas_used = result.gas_used.as_u64();
+    info!("[iolite] TryPay gas={}; gas_left={}, gas_used={}", gas, gas_left, gas_used);
 
-    Ok(gas_left)
+    Ok(gas_used)
 }

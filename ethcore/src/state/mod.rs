@@ -927,7 +927,7 @@ impl<B: Backend> State<B> {
                             info!("[iolite] Successfully prepared business meta payer.");
                             info!("[iolite] payer.Pay.before | Gas: {}", pure_tx_gas_used);
                             payer.nonce = t._get_nonce() + 1;
-                            let (_, gas_left) = match payer.pay(meta_gas) {
+                            let (_, payer_meta_gas_used) = match payer.pay(meta_gas) {
                                 Ok(ret) => ret,
                                 Err(e) => {
                                     error_occured = true;
@@ -936,9 +936,10 @@ impl<B: Backend> State<B> {
                                 }
                             };
 
-                            info!("[iolite] payer.Pay.after | Gas left: {}", gas_left);
+                            info!("[iolite] payer.Pay.after | Gas left: {}", meta_gas-payer_meta_gas_used);
+                            info!("[iolite] payer.Pay.after | Meta Gas used: {}", payer_meta_gas_used);
                             //TODO: <IOLITE> check if the formula correct
-                            let meta_gas_used = meta_gas - gas_left;
+                            let meta_gas_used = payer_meta_gas_used;
                             info!("[iolite] Metagas used: {}", meta_gas_used);
 
                             result_value.gas_used = U256::from(pure_tx_gas_used + meta_gas_used);

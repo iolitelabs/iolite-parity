@@ -1,4 +1,5 @@
 use std::ops::Deref;
+use std::fmt;
 use ethereum_types::Address;
 use rlp::{self};
 
@@ -32,6 +33,13 @@ impl rlp::Encodable for BusinessMetadata {
     }
 }
 
+impl fmt::Display for BusinessMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "BusinessMetadata: {}", &self.data)
+    }
+}
+
+
 #[derive(Debug, Clone, PartialEq, Eq)]//, Serialize)]
 pub struct Metadata {
     //#[serde(rename="to")]
@@ -39,7 +47,6 @@ pub struct Metadata {
     //#[serde(rename="input")]
     pub input: Bytes,
 }
-
 
 impl rlp::Decodable for Metadata {
     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
@@ -56,11 +63,17 @@ impl rlp::Decodable for Metadata {
     }
 }
 
-
 impl rlp::Encodable for Metadata {
     fn rlp_append(&self, s: &mut rlp::RlpStream) {
         s.begin_list(2);
         s.append(&self.business);
         s.append(&self.input);
+    }
+}
+
+impl fmt::Display for Metadata {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Business: {}; Input(len): {}; Input: {:x?}",
+               self.business, self.input.len(), self.input)
     }
 }
