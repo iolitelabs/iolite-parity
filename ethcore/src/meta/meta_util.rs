@@ -43,7 +43,7 @@ impl fmt::Display for MetaUtilError {
 pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata: Bytes, meta_limit: U256, read_evm: &'a mut Executive<'a, T>)//read_evm: Executive)
         // return (payer, meta_logs, payment, intrinsic_gas)
         -> Result<(SimpleMetaPayer<'a, T>, MetaLogs, U256, u64), String/*MetaUtilError*/> {
-    println!("[iolite] UnpackSimpleMetadata. Metalimit={}", meta_limit);
+    info!("[iolite] UnpackSimpleMetadata. Metalimit={}", meta_limit);
 
     let mut executor = SimpleMetaExecutor::new(metadata);
 

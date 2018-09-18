@@ -59,6 +59,7 @@ impl TransactionFilter {
 
 	/// Check if transaction is allowed at given block.
 	pub fn transaction_allowed<C: BlockInfo + CallContract>(&self, parent_hash: &H256, transaction: &SignedTransaction, client: &C) -> bool {
+	        trace!(target: "iolite_exec_trace", "[transaction_allowed()] at {path}", path="ethcore/src/tx_filter.rs:line 60");
 		let mut cache = self.permission_cache.lock();
 
 		let tx_type = match transaction.action {

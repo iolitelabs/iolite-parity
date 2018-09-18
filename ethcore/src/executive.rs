@@ -32,6 +32,7 @@ use externalities::*;
 use trace::{self, Tracer, VMTracer};
 use transaction::{Action, SignedTransaction};
 use crossbeam;
+use types::metalogs::MetaLogs;
 pub use executed::{Executed, ExecutionResult};
 
 #[cfg(debug_assertions)]
@@ -226,7 +227,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 	pub fn transact_virtual<T, V>(&mut self, t: &SignedTransaction, options: TransactOptions<T, V>)
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: Tracer, V: VMTracer,
 	{
-	        println!("Transact_virtual() called.");
+                trace!(target: "iolite_exec_trace", "Transact_virtual() called.");
 		let sender = t.sender();
 		let balance = self.state.balance(&sender)?;
 		let needed_balance = t.value.saturating_add(t.gas.saturating_mul(t.gas_price));
@@ -247,7 +248,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 		mut tracer: T,
 		mut vm_tracer: V
 	) -> Result<Executed<T::Output, V::Output>, ExecutionError> where T: Tracer, V: VMTracer {
-	        println!("[transact_with_tracer] at {path}", path="ethcore/src/executive.rs");
+	        trace!(target: "iolite_exec_trace", "[transact_with_tracer] at {path}", path="ethcore/src/executive.rs");
 		let sender = t.sender();
 		let nonce = self.state.nonce(&sender)?;
 
@@ -387,8 +388,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 		tracer: &mut T,
 		vm_tracer: &mut V
 	) -> vm::Result<FinalizationResult> where T: Tracer, V: VMTracer {
-                println!("[Executive::call] at {path}", path="ethcore/src/executive.rs:line 377");
-                println!("[Executive::call](params={:?}) self.env_info={:?}, static={}",
+                trace!(target: "iolite_exec_trace", "[Executive::call] at {path}", path="ethcore/src/executive.rs:line 377");
+                trace!(target: "iolite_exec_trace", "[Executive::call](params={:?}) self.env_info={:?}, static={}",
                         params, self.info, self.static_flag);
 
 		trace!("Executive::call(params={:?}) self.env_info={:?}, static={}", params, self.info, self.static_flag);
@@ -662,6 +663,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 					gas_used: t.gas,
 					refunded: U256::zero(),
 					cumulative_gas_used: self.info.gas_used + t.gas,
+					meta_logs: MetaLogs::new(),
 					logs: vec![],
 					contracts_created: vec![],
 					output: output,
@@ -677,6 +679,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 					gas_used: gas_used,
 					refunded: refunded,
 					cumulative_gas_used: self.info.gas_used + gas_used,
+					meta_logs: MetaLogs::new(),
 					logs: substate.logs,
 					contracts_created: substate.contracts_created,
 					output: output,

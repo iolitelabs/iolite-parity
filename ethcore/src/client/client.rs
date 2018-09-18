@@ -73,6 +73,7 @@ use trace::{TraceDB, ImportRequest as TraceImportRequest, LocalizedTrace, Databa
 use transaction::{self, LocalizedTransaction, UnverifiedTransaction, SignedTransaction, Transaction, Action};
 use types::filter::Filter;
 use types::mode::Mode as IpcMode;
+use types::metalogs::MetaLogs;
 use verification;
 use verification::{PreverifiedBlock, Verifier};
 use verification::queue::BlockQueue;
@@ -572,6 +573,8 @@ impl Importer {
 							).expect("state known to be available for just-imported block; qed");
 
 							let options = TransactOptions::with_no_tracing().dont_check_nonce();
+							trace!(target: "iolite-exec-trace", "[check_epoch_end_signal] at {path}",
+                                                                 path="ethcore/src/client/client.rs");
 							let res = Executive::new(&mut state, &env_info, self.engine.machine())
 								.transact(&transaction, options);
 
@@ -1157,6 +1160,7 @@ impl Client {
 	// from the null sender, with 50M gas.
 	fn contract_call_tx(&self, block_id: BlockId, address: Address, data: Bytes) -> SignedTransaction {
 		let from = Address::default();
+		trace!(target: "iolite-exec-trace", "[contract_call_tx] at {path}", path="ethcore/src/client/client.rs:line 1160");
 		Transaction {
 			nonce: self.nonce(&from, block_id).unwrap_or_else(|| self.engine.account_start_nonce(0)),
 			action: Action::Call(address),
@@ -1204,6 +1208,8 @@ impl Client {
 			Ok(ret)
 		}
 
+                trace!(target: "iolite-exec-trace", "`ethcore/src/client/client.rs:line 1178 -> do_virtual_call()`
+                          \nTx: {tx:?}\n======", tx=t);
 		let state_diff = analytics.state_diffing;
 
 		match (analytics.transaction_tracing, analytics.vm_tracing) {
@@ -1929,6 +1935,7 @@ impl BlockChainClient for Client {
 	}
 
 	fn transact_contract(&self, address: Address, data: Bytes) -> Result<(), transaction::Error> {
+	        trace!(target: "iolite_exec_trace", "[transact_contract] at {path}", path="ethcore/src/client/client.rs:line 1936");
 		let authoring_params = self.importer.miner.authoring_params();
 		let transaction = Transaction {
 			nonce: self.latest_nonce(&authoring_params.author),
@@ -2302,6 +2309,7 @@ fn transaction_receipt(machine: &::machine::EthereumMachine, mut tx: LocalizedTr
 			Action::Call(_) => None,
 			Action::Create => Some(contract_address(machine.create_address_scheme(block_number), &sender, &tx.nonce, &tx.data).0)
 		},
+		meta_logs: receipt.meta_logs,
 		logs: receipt.logs.into_iter().enumerate().map(|(i, log)| LocalizedLogEntry {
 			entry: log,
 			block_hash: block_hash,
@@ -2419,6 +2427,7 @@ mod tests {
 			cumulative_gas_used: gas_used,
 			gas_used: gas_used - 5.into(),
 			contract_address: None,
+			meta_logs: MetaLogs::new(),
 			logs: vec![LocalizedLogEntry {
 				entry: logs[0].clone(),
 				block_hash: block_hash,

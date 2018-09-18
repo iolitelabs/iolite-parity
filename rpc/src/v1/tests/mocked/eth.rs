@@ -26,6 +26,7 @@ use ethcore::client::{BlockChainClient, BlockId, EachBlockWith, Executed, TestBl
 use ethcore::log_entry::{LocalizedLogEntry, LogEntry};
 use ethcore::miner::MinerService;
 use ethcore::receipt::{LocalizedReceipt, TransactionOutcome};
+use ethcore::types::metalogs::MetaLogs;
 use ethkey::Secret;
 use sync::SyncState;
 use miner::external::ExternalMiner;
@@ -1015,6 +1016,7 @@ fn rpc_eth_transaction_receipt() {
 		cumulative_gas_used: U256::from(0x20),
 		gas_used: U256::from(0x10),
 		contract_address: None,
+		meta_logs: MetaLogs::new(),
 		logs: vec![LocalizedLogEntry {
 			entry: LogEntry {
 				address: Address::from_str("33990122638b9132ca29c723bdf037f1a891a70c").unwrap(),

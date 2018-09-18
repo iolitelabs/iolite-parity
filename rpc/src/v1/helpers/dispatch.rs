@@ -129,6 +129,7 @@ impl<C: miner::BlockChainClient, M: MinerService> FullDispatcher<C, M> {
 		// use `import_claimed_local_transaction` so we can decide (based on config flags) if we want to treat
 		// it as local or not. Nodes with public RPC interfaces will want these transactions to be treated like
 		// external transactions.
+	        trace!(target: "iolite_exec_trace", "dispatch_transaction at {path}", path="`rpc/src/v1/helpers/dispatch.rs:line 126`");
 		miner.import_claimed_local_transaction(client, signed_transaction, trusted)
 			.map_err(errors::transaction)
 			.map(|_| hash)

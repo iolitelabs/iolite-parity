@@ -419,6 +419,7 @@ impl Miner {
 			let hash = transaction.hash();
 			let sender = transaction.sender();
 
+			trace!(target: "iolite_exec_trace", "[prepare_block] at {path}", path="ethcore/src/miner/miner.rs");
 			// Re-verify transaction again vs current state.
 			let result = client.verify_signed(&transaction)
 				.map_err(|e| e.into())
@@ -693,6 +694,7 @@ impl Miner {
 			}
 		};
 
+		trace!(target: "iolite_exec_trace", "[prepare_pending_block] at {path}", path="ethcore/src/miner/miner.rs:line 680");
 		if prepare_new {
 			// --------------------------------------------------------------------------
 			// | NOTE Code below requires sealing locks.                                |
@@ -721,6 +723,7 @@ impl Miner {
 	fn prepare_and_update_sealing<C: miner::BlockChainClient>(&self, chain: &C) {
 		use miner::MinerService;
 
+		trace!(target: "iolite_exec_trace", "[Miner::prepare_and_update_sealing] at {path}", path="ethcore/src/miner/miner.rs:line 723");
 		// Make sure to do it after transaction is imported and lock is dropped.
 		// We need to create pending block and enable sealing.
 		if self.engine.seals_internally().unwrap_or(false) || !self.prepare_pending_block(chain) {
@@ -839,11 +842,13 @@ impl miner::MinerService for Miner {
 		pending: PendingTransaction,
 		trusted: bool
 	) -> Result<(), transaction::Error> {
+	        trace!(target: "iolite_exec_trace", "[import_claimed_local_transaction()] at {path}", path="`ethcore/src/miner/miner.rs:line 836`");
 		// treat the tx as local if the option is enabled, or if we have the account
 		let sender = pending.sender();
 		let treat_as_local = trusted
 			|| !self.options.tx_queue_no_unfamiliar_locals
 			|| self.accounts.as_ref().map(|accts| accts.has_account(sender)).unwrap_or(false);
+                trace!(target: "iolite_exec_trace", "[import_claimed_local_transaction()] treat_as_local={is_local}", is_local=treat_as_local);
 
 		if treat_as_local {
 			self.import_own_transaction(chain, pending)
@@ -1017,6 +1022,7 @@ impl miner::MinerService for Miner {
 			return;
 		}
 
+		trace!(target: "iolite_exec_trace", "[update_sealing] at {path}", path="ethcore/src/miner/miner.rs:line 1013");
 		// --------------------------------------------------------------------------
 		// | NOTE Code below requires sealing locks.                                |
 		// | Make sure to release the locks before calling that method.             |

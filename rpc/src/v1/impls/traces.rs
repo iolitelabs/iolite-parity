@@ -88,6 +88,7 @@ impl<C, S> Traces for TracesClient<C> where
 	}
 
 	fn call(&self, meta: Self::Metadata, request: CallRequest, flags: TraceOptions, block: Trailing<BlockNumber>) -> Result<TraceResults> {
+	        trace!(target: "iolite_exec_trace", "call() called in `{path}`", path="/rpc/src/v1/impls/traces.rs:line 90");
 		let block = block.unwrap_or_default();
 
 		let request = CallRequest::into(request);
@@ -137,6 +138,7 @@ impl<C, S> Traces for TracesClient<C> where
 	}
 
 	fn raw_transaction(&self, raw_transaction: Bytes, flags: TraceOptions, block: Trailing<BlockNumber>) -> Result<TraceResults> {
+	        trace!(target: "iolite_exec_trace", "raw_transaction() called in `{path}`", path="/rpc/src/v1/impls/traces.rs:line 140");
 		let block = block.unwrap_or_default();
 
 		let tx = Rlp::new(&raw_transaction.into_vec()).as_val().map_err(|e| errors::invalid_params("Transaction is not valid RLP", e))?;

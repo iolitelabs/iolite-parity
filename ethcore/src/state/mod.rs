@@ -221,7 +221,7 @@ pub fn check_proof(
 	};
 
 	let options = TransactOptions::with_no_tracing().save_output_from_contract();
-	println!("[check_proof] at {path}", path="ethcore/src/state/mod.rs:line 194");
+	trace!(target: "iolite_exec_trace", "[check_proof] at {path}", path="ethcore/src/state/mod.rs:line 194");
 	match state.execute(env_info, machine, transaction, options, true) {
 		Ok(executed) => ProvedExecution::Complete(executed),
 		Err(ExecutionError::Internal(_)) => ProvedExecution::BadProof,
@@ -257,7 +257,7 @@ pub fn prove_transaction<H: AsHashDB + Send + Sync>(
 	};
 
 	let options = TransactOptions::with_no_tracing().dont_check_nonce().save_output_from_contract();
-	println!("[prove_transaction] at {path}", path="ethcore/src/state/mod.rs:line 230");
+	trace!(target: "iolite_exec_trace", "[prove_transaction] at {path}", path="ethcore/src/state/mod.rs:line 230");
 	match state.execute(env_info, machine, transaction, options, virt) {
 		Err(ExecutionError::Internal(_)) => None,
 		Err(e) => {
@@ -706,7 +706,7 @@ impl<B: Backend> State<B> {
 	/// Execute a given transaction, producing a receipt and an optional trace.
 	/// This will change the state accordingly.
 	pub fn apply(&mut self, env_info: &EnvInfo, machine: &Machine, t: &SignedTransaction, tracing: bool) -> ApplyResult<FlatTrace, VMTrace> {
-                println!("[apply] at {path}", path="ethcore/src/state/mod.rs:line 703");
+                trace!(target: "iolite_exec_trace", "[apply] at {path}", path="ethcore/src/state/mod.rs:line 703");
 		if tracing {
 			let options = TransactOptions::with_tracing();
 			self.apply_with_tracing(env_info, machine, t, options.tracer, options.vm_tracer)
@@ -729,7 +729,7 @@ impl<B: Backend> State<B> {
 		T: trace::Tracer,
 		V: trace::VMTracer,
 	{
-                println!("[apply_with_tracing] at {path}", path="ethcore/src/state/mod.rs:line 715");
+                trace!(target: "iolite_exec_trace", "[apply_with_tracing] at {path}", path="ethcore/src/state/mod.rs:line 715");
 		let options = TransactOptions::new(tracer, vm_tracer);
 		let e = self.execute(env_info, machine, t, options, false)?;
 		let params = machine.params();
@@ -751,7 +751,7 @@ impl<B: Backend> State<B> {
 		};
 
 		let output = e.output;
-		let receipt = Receipt::new(outcome, e.cumulative_gas_used, e.logs);
+		let receipt = Receipt::new(outcome, e.cumulative_gas_used, e.logs, e.meta_logs);
 		trace!(target: "state", "Transaction receipt: {:?}", receipt);
 
 		Ok(ApplyOutcome {
@@ -769,7 +769,7 @@ impl<B: Backend> State<B> {
 	fn execute<T, V>(&mut self, env_info: &EnvInfo, machine: &Machine, t: &SignedTransaction, options: TransactOptions<T, V>, virt: bool)
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: trace::Tracer, V: trace::VMTracer,
 	{
-                println!("[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
+                trace!(target: "iolite_exec_trace", "[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
 
                 let main_transact_result = {
                     let mut e = Executive::new(self, env_info, machine);
@@ -943,6 +943,7 @@ impl<B: Backend> State<B> {
 
                             result_value.gas_used = U256::from(pure_tx_gas_used + meta_gas_used);
                             result_value.cumulative_gas_used = result_value.cumulative_gas_used.add(U256::from(meta_gas_used));
+                            result_value.meta_logs = meta_logs;
                             info!("[iolite] Updated new gas...");
                         }
                         break;

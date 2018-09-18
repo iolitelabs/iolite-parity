@@ -37,7 +37,7 @@ fn to_hex_string(bytes: Vec<u8>) -> String {
   strs.join("")
 }
 fn print_rlp<T: rlp::Encodable + ::std::fmt::Display>(s: &T) {
-    println!("RLP of {}: {}", s, to_hex_string(rlp::encode(s).into_vec()));
+    info!("RLP of {}: {}", s, to_hex_string(rlp::encode(s).into_vec()));
 }
 fn test_rlp() {
         let addr: &'static str = "0xdc4014def24ee392bf36e465c65ab0a3ed52fe5b";
@@ -48,25 +48,25 @@ fn test_rlp() {
             recipient: Address::from(addr),
             amount: U256::from(5),
         };
-        println!("Rlp of Metalog: {}", to_hex_string(rlp::encode(&metalog).into_vec()));
+        info!("Rlp of Metalog: {}", to_hex_string(rlp::encode(&metalog).into_vec()));
 
         let mut metalogs = MetaLogs::new();
         metalogs.push(address, U256::from(5));
-        println!("Rlp of Metalogs: {}", to_hex_string(rlp::encode(&metalogs).into_vec()));
+        info!("Rlp of Metalogs: {}", to_hex_string(rlp::encode(&metalogs).into_vec()));
 }
 
 impl MetaExecute for SimpleMetaExecutor {
     fn execute(&mut self) -> Result<MetaLogs, String> {
         test_rlp();
         if self.metadata.len() == 0 {
-            println!("[iolite] Error! Metadata is empty.");
+            info!("[iolite] Error! Metadata is empty.");
             return Err("[iolite] Error! Metadata is empty.".to_string());
         }
 
-        println!("Trying to decode metalogs.");
+        info!("Trying to decode metalogs.");
         let meta: MetaLogs = match rlp::decode(&self.metadata) {
             Ok(meta) => meta,
-            Err(err) => { println!("{}", err); return Err(err.to_string()) },
+            Err(err) => { info!("{}", err); return Err(err.to_string()) },
         };
 
         for log in meta.logs() {

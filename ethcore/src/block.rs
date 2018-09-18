@@ -73,7 +73,7 @@ impl Decodable for Block {
 			return Err(DecoderError::RlpIsTooBig);
 		}
 		if rlp.item_count()? != 3 {
-		        println!("RlpIncorrectListLen at {path}", path="ethcore/src/block.rs");
+		        trace!(target: "iolite_exec_trace", "RlpIncorrectListLen at {path}", path="ethcore/src/block.rs");
 			return Err(DecoderError::RlpIncorrectListLen);
 		}
 		Ok(Block {
@@ -321,6 +321,7 @@ impl<'x> OpenBlock<'x> {
 	///
 	/// If valid, it will be executed, and archived together with the receipt.
 	pub fn push_transaction(&mut self, t: SignedTransaction, h: Option<H256>) -> Result<&Receipt, Error> {
+	        trace!(target: "iolite_exec_trace", "[push_transaction] at {path}", path="/ethcore/src/block.rs:line 322");
 		if self.block.transactions_set.contains(&t.hash()) {
 			return Err(TransactionError::AlreadyImported.into());
 		}

@@ -22,6 +22,7 @@ use rlp::{Rlp, RlpStream, Encodable, Decodable, DecoderError};
 
 use {BlockNumber};
 use log_entry::{LogEntry, LocalizedLogEntry};
+use metalogs::MetaLogs;
 
 /// Transaction outcome store in the receipt.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,17 +44,20 @@ pub struct Receipt {
 	pub log_bloom: Bloom,
 	/// The logs stemming from this transaction.
 	pub logs: Vec<LogEntry>,
+	/// The meta logs stemming from this transaction.
+	pub meta_logs: MetaLogs,
 	/// Transaction outcome.
 	pub outcome: TransactionOutcome,
 }
 
 impl Receipt {
 	/// Create a new receipt.
-	pub fn new(outcome: TransactionOutcome, gas_used: U256, logs: Vec<LogEntry>) -> Receipt {
+	pub fn new(outcome: TransactionOutcome, gas_used: U256, logs: Vec<LogEntry>, meta_logs: MetaLogs) -> Receipt {
 		Receipt {
 			gas_used: gas_used,
 			log_bloom: logs.iter().fold(Bloom::default(), |mut b, l| { b = &b | &l.bloom(); b }), //TODO: use |= operator
 			logs: logs,
+			meta_logs: meta_logs,
 			outcome: outcome,
 		}
 	}
@@ -63,20 +67,21 @@ impl Encodable for Receipt {
 	fn rlp_append(&self, s: &mut RlpStream) {
 		match self.outcome {
 			TransactionOutcome::Unknown => {
-				s.begin_list(3);
+				s.begin_list(4);
 			},
 			TransactionOutcome::StateRoot(ref root) => {
-				s.begin_list(4);
+				s.begin_list(5);
 				s.append(root);
 			},
 			TransactionOutcome::StatusCode(ref status_code) => {
-				s.begin_list(4);
+				s.begin_list(5);
 				s.append(status_code);
 			},
 		}
 		s.append(&self.gas_used);
 		s.append(&self.log_bloom);
 		s.append_list(&self.logs);
+		s.append(&self.meta_logs);
 	}
 }
 
@@ -88,12 +93,22 @@ impl Decodable for Receipt {
 				gas_used: rlp.val_at(0)?,
 				log_bloom: rlp.val_at(1)?,
 				logs: rlp.list_at(2)?,
+				meta_logs: MetaLogs::new(),
 			})
-		} else {
+		} else if rlp.item_count()? == 4 {
+			Ok(Receipt {
+				outcome: TransactionOutcome::Unknown,
+				gas_used: rlp.val_at(0)?,
+				log_bloom: rlp.val_at(1)?,
+				logs: rlp.list_at(2)?,
+				meta_logs: rlp.val_at(3)?,
+			})
+                } else {
 			Ok(Receipt {
 				gas_used: rlp.val_at(1)?,
 				log_bloom: rlp.val_at(2)?,
 				logs: rlp.list_at(3)?,
+				meta_logs: rlp.val_at(4)?,
 				outcome: {
 					let first = rlp.at(0)?;
 					if first.is_data() && first.data()?.len() <= 1 {
@@ -101,7 +116,7 @@ impl Decodable for Receipt {
 					} else {
 						TransactionOutcome::StateRoot(first.as_val()?)
 					}
-				}
+				},
 			})
 		}
 	}
@@ -153,6 +168,8 @@ pub struct LocalizedReceipt {
 	pub contract_address: Option<Address>,
 	/// Logs
 	pub logs: Vec<LocalizedLogEntry>,
+	/// Meta logs
+	pub meta_logs: MetaLogs,
 	/// Logs bloom
 	pub log_bloom: Bloom,
 	/// Transaction outcome.
@@ -174,7 +191,8 @@ mod tests {
 				address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
 				topics: vec![],
 				data: vec![0u8; 32]
-			}]
+			}],
+			MetaLogs::new(),
 		);
 		assert_eq!(&::rlp::encode(&r)[..], &expected[..]);
 	}
@@ -189,7 +207,8 @@ mod tests {
 				address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
 				topics: vec![],
 				data: vec![0u8; 32]
-			}]
+			}],
+			MetaLogs::new(),
 		);
 		let encoded = ::rlp::encode(&r);
 		assert_eq!(&encoded[..], &expected[..]);
@@ -207,7 +226,8 @@ mod tests {
 				address: "dcf421d093428b096ca501a7cd1a740855a7976f".into(),
 				topics: vec![],
 				data: vec![0u8; 32]
-			}]
+			}],
+			MetaLogs::new(),
 		);
 		let encoded = ::rlp::encode(&r);
 		assert_eq!(&encoded[..], &expected[..]);

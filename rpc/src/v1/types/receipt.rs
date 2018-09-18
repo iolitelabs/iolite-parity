@@ -16,6 +16,7 @@
 
 use v1::types::{Log, H160, H256, H2048, U256, U64};
 use ethcore::receipt::{Receipt as EthReceipt, RichReceipt, LocalizedReceipt, TransactionOutcome};
+use ethcore::metalogs::MetaLogs;
 
 /// Receipt
 #[derive(Debug, Serialize)]
@@ -43,6 +44,9 @@ pub struct Receipt {
 	pub contract_address: Option<H160>,
 	/// Logs
 	pub logs: Vec<Log>,
+	/// Meta logs
+	#[serde(rename="metaLogs")]
+	pub meta_logs: MetaLogs,
 	/// State Root
 	#[serde(rename="root")]
 	pub state_root: Option<H256>,
@@ -81,6 +85,7 @@ impl From<LocalizedReceipt> for Receipt {
 			gas_used: Some(r.gas_used.into()),
 			contract_address: r.contract_address.map(Into::into),
 			logs: r.logs.into_iter().map(Into::into).collect(),
+			meta_logs: r.meta_logs,
 			status_code: Self::outcome_to_status_code(&r.outcome),
 			state_root: Self::outcome_to_state_root(r.outcome),
 			logs_bloom: r.log_bloom.into(),
@@ -99,6 +104,8 @@ impl From<RichReceipt> for Receipt {
 			gas_used: Some(r.gas_used.into()),
 			contract_address: r.contract_address.map(Into::into),
 			logs: r.logs.into_iter().map(Into::into).collect(),
+			//TODO: <IOLITE> do we need RichReceipt and its support of MetaLogs?
+			meta_logs: MetaLogs::new(),
 			status_code: Self::outcome_to_status_code(&r.outcome),
 			state_root: Self::outcome_to_state_root(r.outcome),
 			logs_bloom: r.log_bloom.into(),
@@ -117,6 +124,8 @@ impl From<EthReceipt> for Receipt {
 			gas_used: None,
 			contract_address: None,
 			logs: r.logs.into_iter().map(Into::into).collect(),
+			//TODO: <IOLITE> do we need RichReceipt and its support of MetaLogs?
+			meta_logs: MetaLogs::new(),
 			status_code: Self::outcome_to_status_code(&r.outcome),
 			state_root: Self::outcome_to_state_root(r.outcome),
 			logs_bloom: r.log_bloom.into(),

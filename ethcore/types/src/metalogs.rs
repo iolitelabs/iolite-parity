@@ -1,11 +1,10 @@
 //TODO: <IOLITE> copyright
 
-//use serde::{Serialize};
-//use serde::ser::SerializeStruct;
 use ethereum_types::{U256, Address};
 use rlp::{self};
+use serde::ser::{Serialize, Serializer, SerializeSeq};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct MetaLogs {
     pub logs: Vec<MetaLog>,
 }
@@ -17,9 +16,7 @@ impl rlp::Decodable for MetaLogs {
         }
 
         let mut metalogs = MetaLogs { logs: vec![], };
-        println!("Trying to get num items.");
         let num_items = rlp.item_count()?;
-        println!("Num items {}", num_items);
         for i in 0..num_items {
             metalogs.logs.push(rlp.val_at(i)?);
         }
@@ -34,6 +31,19 @@ impl rlp::Encodable for MetaLogs {
         for log in &self.logs {
             s.append(log);
         }
+    }
+}
+
+impl Serialize for MetaLogs {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(self.logs.len()))?;
+        for e in self.logs() {
+            seq.serialize_element(e)?;
+        }
+        seq.end()
     }
 }
 
@@ -59,11 +69,11 @@ impl MetaLogs {
 
 //TODO: Implement Iterator for MetaLogs
 
-#[derive(Debug, Clone, PartialEq, Eq)]//, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct MetaLog {
-    //#[serde(rename="to")]
+    #[serde(rename="to")]
     pub recipient: Address,
-    //#[serde(rename="value")]
+    #[serde(rename="value")]
     pub amount: U256,
 }
 

@@ -239,6 +239,8 @@ impl TransactionQueue {
 		transactions: Vec<verifier::Transaction>,
 	) -> Vec<Result<(), transaction::Error>> {
 		// Run verification
+                trace!(target: "iolite_exec_trace", "[import()] at path=`miner/src/pool/queue.rs`");
+                trace!(target: "iolite_exec_trace", "[import()] transaction imported into pool");
 		trace_time!("pool::verify_and_import");
 		let options = self.options.read().clone();
 

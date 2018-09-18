@@ -53,6 +53,7 @@ use spec::Spec;
 use types::basic_account::BasicAccount;
 use types::mode::Mode;
 use types::pruning_info::PruningInfo;
+use types::metalogs::MetaLogs;
 
 use verification::queue::QueueInfo;
 use block::{OpenBlock, SealedBlock, ClosedBlock};
@@ -772,7 +773,8 @@ impl BlockChainClient for TestBlockChainClient {
 			let receipt = BlockReceipts::new(vec![Receipt::new(
 				TransactionOutcome::StateRoot(H256::zero()),
 				U256::zero(),
-				vec![])]);
+				vec![],
+				MetaLogs::new())]);
 			let mut rlp = RlpStream::new();
 			rlp.append(&receipt);
 			return Some(rlp.out());

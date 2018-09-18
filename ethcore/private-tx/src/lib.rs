@@ -433,6 +433,7 @@ impl Provider where {
 			let (new_address, _) = ethcore_contract_address(engine.create_address_scheme(env_info.number), &sender, &nonce, &transaction.data);
 			Some(new_address)
 		});
+		trace!(target: "iolite_exec_trace", "[execute_private] at {path}", path="ethcore/private-tx/src/lib.rs");
 		let result = Executive::new(&mut state, &env_info, engine.machine()).transact_virtual(transaction, options)?;
 		let (encrypted_code, encrypted_storage) = match contract_address {
 			None => bail!(ErrorKind::ContractDoesNotExist),
