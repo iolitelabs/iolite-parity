@@ -251,6 +251,9 @@ mod test {
 			data: vec![],
 			nonce: None,
 			condition: None,
+			//TODO: <IOLITE> check this test!
+			metadata: vec![],
+			metadata_limit: U256::zero(),
 		})
 	}
 

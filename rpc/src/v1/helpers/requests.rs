@@ -38,7 +38,10 @@ pub struct TransactionRequest {
 	pub nonce: Option<U256>,
 	/// Delay until this condition is met.
 	pub condition: Option<TransactionCondition>,
-	//TODO: <IOLITE> add metadata and metadatLimit fields here to be able to pass these params in RPC
+	/// Iolite Metadata
+	pub metadata: Option<Bytes>,
+	/// Iolite Metadata limit
+	pub metadata_limit: Option<U256>,
 }
 
 /// Transaction request coming from RPC with default values filled in.
@@ -62,7 +65,10 @@ pub struct FilledTransactionRequest {
 	pub nonce: Option<U256>,
 	/// Delay until this condition is met.
 	pub condition: Option<TransactionCondition>,
-	//TODO: <IOLITE> add metadata and metadatLimit fields here to be able to pass these params in RPC
+	/// Iolite Metadata
+	pub metadata: Bytes,
+	/// Iolite Metadata limit
+	pub metadata_limit: U256,
 }
 
 impl From<FilledTransactionRequest> for TransactionRequest {
@@ -76,6 +82,8 @@ impl From<FilledTransactionRequest> for TransactionRequest {
 			data: Some(r.data),
 			nonce: r.nonce,
 			condition: r.condition,
+			metadata: Some(r.metadata),
+			metadata_limit: Some(r.metadata_limit),
 		}
 	}
 }
@@ -97,7 +105,11 @@ pub struct CallRequest {
 	pub data: Option<Vec<u8>>,
 	/// Nonce
 	pub nonce: Option<U256>,
-	//TODO: <IOLITE> add metadata and metadatLimit fields here to be able to pass these params in RPC
+	//TODO: <IOLITE> is this used only by contract call?
+	/// Iolite Metadata
+	pub metadata: Option<Vec<u8>>,
+	/// Iolite Metadata limit
+	pub metadata_limit: Option<U256>,
 }
 
 /// Confirmation object

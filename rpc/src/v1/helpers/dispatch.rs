@@ -160,6 +160,8 @@ impl<C: miner::BlockChainClient + BlockChainClient, M: MinerService> Dispatcher 
 			value: request.value.unwrap_or_else(|| 0.into()),
 			data: request.data.unwrap_or_else(Vec::new),
 			condition: request.condition,
+			metadata: request.metadata.unwrap_or_else(Vec::new),
+			metadata_limit: request.metadata_limit.unwrap_or_else(|| 0.into()),
 		}))
 	}
 
@@ -352,6 +354,8 @@ impl Dispatcher for LightDispatcher {
 				value: request.value.unwrap_or_else(|| 0.into()),
 				data: request.data.unwrap_or_else(Vec::new),
 				condition: request.condition,
+				metadata: request.metadata.unwrap_or_else(Vec::new),
+				metadata_limit: request.metadata_limit.unwrap_or_else(|| 0.into()),
 			}
 		};
 
@@ -435,8 +439,8 @@ fn sign_transaction(
 		data: filled.data,
                 //TODO: <IOLITE> probably later we will need to pass some metadata and
                 // metadataLimit here also
-		metadata: Bytes::new(),
-		metadataLimit: U256::zero(),
+		metadata: filled.metadata,
+		metadataLimit: filled.metadata_limit,
 		isOld: false,
 		..Default::default()
 	};

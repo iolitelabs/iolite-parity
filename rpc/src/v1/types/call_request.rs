@@ -36,6 +36,11 @@ pub struct CallRequest {
 	pub data: Option<Bytes>,
 	/// Nonce
 	pub nonce: Option<U256>,
+	/// Iolite Metadata
+	pub metadata: Option<Bytes>,
+	#[serde(rename="metadataLimit")]
+	/// Iolite Metadata limit
+	pub metadata_limit: Option<U256>,
 }
 
 impl Into<Request> for CallRequest {
@@ -48,6 +53,8 @@ impl Into<Request> for CallRequest {
 			value: self.value.map(Into::into),
 			data: self.data.map(Into::into),
 			nonce: self.nonce.map(Into::into),
+			metadata: self.metadata.map(Into::into),
+			metadata_limit: self.metadata_limit.map(Into::into),
 		}
 	}
 }
@@ -81,6 +88,9 @@ mod tests {
 			value: Some(U256::from(3)),
 			data: Some(vec![0x12, 0x34, 0x56].into()),
 			nonce: Some(U256::from(4)),
+			//TODO: <IOLITE> check this test!
+			metadata: vec![],
+			metadata_limit: U256::zero(),
 		});
 	}
 
@@ -103,7 +113,10 @@ mod tests {
 			gas: Some(U256::from_str("76c0").unwrap()),
 			value: Some(U256::from_str("9184e72a").unwrap()),
 			data: Some("d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675".from_hex().unwrap().into()),
-			nonce: None
+			nonce: None,
+			//TODO: <IOLITE> check this test!
+			metadata: vec![],
+			metadata_limit: U256::zero(),
 		});
 	}
 
@@ -120,6 +133,9 @@ mod tests {
 			value: None,
 			data: None,
 			nonce: None,
+			//TODO: <IOLITE> check this test!
+			metadata: vec![],
+			metadata_limit: U256::zero(),
 		});
 	}
 }

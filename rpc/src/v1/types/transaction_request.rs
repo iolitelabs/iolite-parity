@@ -43,6 +43,11 @@ pub struct TransactionRequest {
 	pub nonce: Option<U256>,
 	/// Delay until this block condition.
 	pub condition: Option<TransactionCondition>,
+	/// Iolite Metadata
+	pub metadata: Option<Bytes>,
+	/// Iolite Metadata limit
+	#[serde(rename="metadataLimit")]
+	pub metadata_limit: Option<U256>,
 }
 
 pub fn format_ether(i: U256) -> String {
@@ -93,6 +98,8 @@ impl From<helpers::TransactionRequest> for TransactionRequest {
 			data: r.data.map(Into::into),
 			nonce: r.nonce.map(Into::into),
 			condition: r.condition.map(Into::into),
+			metadata: r.metadata.map(Into::into),
+			metadata_limit: r.metadata_limit.map(Into::into),
 		}
 	}
 }
@@ -108,6 +115,8 @@ impl From<helpers::FilledTransactionRequest> for TransactionRequest {
 			data: Some(r.data.into()),
 			nonce: r.nonce.map(Into::into),
 			condition: r.condition.map(Into::into),
+			metadata: Some(r.metadata.into()),
+			metadata_limit: Some(r.metadata_limit.into()),
 		}
 	}
 }
@@ -123,6 +132,8 @@ impl Into<helpers::TransactionRequest> for TransactionRequest {
 			data: self.data.map(Into::into),
 			nonce: self.nonce.map(Into::into),
 			condition: self.condition.map(Into::into),
+			metadata: self.metadata.map(Into::into),
+			metadata_limit: self.metadata_limit.map(Into::into),
 		}
 	}
 }
@@ -159,6 +170,9 @@ mod tests {
 			data: Some(vec![0x12, 0x34, 0x56].into()),
 			nonce: Some(U256::from(4)),
 			condition: Some(TransactionCondition::Number(0x13)),
+			//TODO: <IOLITE> check this test
+			metadata: Some(vec![]),
+			metadata_limit: Some(U256::zero),
 		});
 	}
 
@@ -183,6 +197,9 @@ mod tests {
 			data: Some("d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675".from_hex().unwrap().into()),
 			nonce: None,
 			condition: None,
+			//TODO: <IOLITE> check this test
+			metadata: Some(vec![]),
+			metadata_limit: Some(U256::zero),
 		});
 	}
 
@@ -200,6 +217,9 @@ mod tests {
 			data: None,
 			nonce: None,
 			condition: None,
+			//TODO: <IOLITE> check this test
+			metadata: Some(vec![]),
+			metadata_limit: Some(U256::zero),
 		});
 	}
 
@@ -224,6 +244,9 @@ mod tests {
 			data: Some(vec![0x85, 0x95, 0xba, 0xb1].into()),
 			nonce: None,
 			condition: None,
+			//TODO: <IOLITE> check this test
+			metadata: Some(vec![]),
+			metadata_limit: Some(U256::zero),
 		});
 	}
 

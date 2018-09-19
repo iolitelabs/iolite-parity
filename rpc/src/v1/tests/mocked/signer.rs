@@ -91,6 +91,9 @@ fn should_return_list_of_items_to_confirm() {
 		data: vec![],
 		nonce: None,
 		condition: None,
+                //TODO: <IOLITE> check this test!
+                metadata: vec![],
+                metadata_limit: U256::zero(),
 	}), Origin::Dapps("http://parity.io".into())).unwrap();
 	let _sign_future = tester.signer.add_request(ConfirmationPayload::EthSignMessage(1.into(), vec![5].into()), Origin::Unknown).unwrap();
 
@@ -122,6 +125,9 @@ fn should_reject_transaction_from_queue_without_dispatching() {
 		data: vec![],
 		nonce: None,
 		condition: None,
+                //TODO: <IOLITE> check this test!
+                metadata: vec![],
+                metadata_limit: U256::zero(),
 	}), Origin::Unknown).unwrap();
 	assert_eq!(tester.signer.requests().len(), 1);
 
@@ -149,6 +155,9 @@ fn should_not_remove_transaction_if_password_is_invalid() {
 		data: vec![],
 		nonce: None,
 		condition: None,
+                //TODO: <IOLITE> check this test!
+                metadata: vec![],
+                metadata_limit: U256::zero(),
 	}), Origin::Unknown).unwrap();
 	assert_eq!(tester.signer.requests().len(), 1);
 
@@ -193,6 +202,9 @@ fn should_confirm_transaction_and_dispatch() {
 		data: vec![],
 		nonce: None,
 		condition: None,
+                //TODO: <IOLITE> check this test!
+                metadata: vec![],
+                metadata_limit: U256::zero(),
 	}), Origin::Unknown).unwrap();
 
 	let t = Transaction {
@@ -201,7 +213,10 @@ fn should_confirm_transaction_and_dispatch() {
 		gas: U256::from(0x50505),
 		action: Action::Call(recipient),
 		value: U256::from(0x1),
-		data: vec![]
+		data: vec![],
+		metadata: vec![],
+		metadataLimit: U256::zero(),
+		isOld: true,
 	};
 	tester.accounts.unlock_account_temporarily(address, "test".into()).unwrap();
 	let signature = tester.accounts.sign(address, None, t.hash(None)).unwrap();
@@ -239,6 +254,9 @@ fn should_alter_the_sender_and_nonce() {
 		data: vec![],
 		nonce: Some(10.into()),
 		condition: None,
+                //TODO: <IOLITE> check this test!
+                metadata: vec![],
+                metadata_limit: U256::zero(),
 	}), Origin::Unknown).unwrap();
 
 	let t = Transaction {
@@ -247,7 +265,10 @@ fn should_alter_the_sender_and_nonce() {
 		gas: U256::from(0x50505),
 		action: Action::Call(recipient),
 		value: U256::from(0x1),
-		data: vec![]
+		data: vec![],
+		metadata: vec![],
+		metadataLimit: U256::zero(),
+		isOld: true,
 	};
 
 	let address = tester.accounts.new_account("test").unwrap();
@@ -289,6 +310,9 @@ fn should_confirm_transaction_with_token() {
 		data: vec![],
 		nonce: None,
 		condition: None,
+                //TODO: <IOLITE> check this test!
+                metadata: vec![],
+                metadata_limit: U256::zero(),
 	}), Origin::Unknown).unwrap();
 
 	let t = Transaction {
@@ -298,6 +322,9 @@ fn should_confirm_transaction_with_token() {
 		action: Action::Call(recipient),
 		value: U256::from(0x1),
 		data: vec![]
+		metadata: vec![],
+		metadataLimit: U256::zero(),
+		isOld: true,
 	};
 	let (signature, token) = tester.accounts.sign_with_token(address, "test".into(), t.hash(None)).unwrap();
 	let t = t.with_signature(signature, None);
@@ -338,6 +365,9 @@ fn should_confirm_transaction_with_rlp() {
 		data: vec![],
 		nonce: None,
 		condition: None,
+                //TODO: <IOLITE> check this test!
+                metadata: vec![],
+                metadata_limit: U256::zero(),
 	}), Origin::Unknown).unwrap();
 
 	let t = Transaction {
@@ -346,7 +376,10 @@ fn should_confirm_transaction_with_rlp() {
 		gas: U256::from(10_000_000),
 		action: Action::Call(recipient),
 		value: U256::from(0x1),
-		data: vec![]
+		data: vec![],
+		metadata: vec![],
+		metadataLimit: U256::zero(),
+		isOld: true,
 	};
 	let signature = tester.accounts.sign(address, Some("test".into()), t.hash(None)).unwrap();
 	let t = t.with_signature(signature, None);
@@ -385,6 +418,9 @@ fn should_return_error_when_sender_does_not_match() {
 		data: vec![],
 		nonce: None,
 		condition: None,
+                //TODO: <IOLITE> check this test!
+                metadata: vec![],
+                metadata_limit: U256::zero(),
 	}), Origin::Unknown).unwrap();
 
 	let t = Transaction {
@@ -393,7 +429,10 @@ fn should_return_error_when_sender_does_not_match() {
 		gas: U256::from(10_000_000),
 		action: Action::Call(recipient),
 		value: U256::from(0x1),
-		data: vec![]
+		data: vec![],
+		metadata: vec![],
+		metadataLimit: U256::zero(),
+		isOld: true,
 	};
 	tester.accounts.unlock_account_temporarily(address, "test".into()).unwrap();
 	let signature = tester.accounts.sign(address, None, t.hash(None)).unwrap();
@@ -432,6 +471,9 @@ fn should_confirm_sign_transaction_with_rlp() {
 		data: vec![],
 		nonce: None,
 		condition: None,
+                //TODO: <IOLITE> check this test!
+                metadata: vec![],
+                metadata_limit: U256::zero(),
 	}), Origin::Unknown).unwrap();
 	assert_eq!(tester.signer.requests().len(), 1);
 
@@ -441,7 +483,10 @@ fn should_confirm_sign_transaction_with_rlp() {
 		gas: U256::from(10_000_000),
 		action: Action::Call(recipient),
 		value: U256::from(0x1),
-		data: vec![]
+		data: vec![],
+		metadata: vec![],
+		metadataLimit: U256::zero(),
+		isOld: true,
 	};
 	let signature = tester.accounts.sign(address, Some("test".into()), t.hash(None)).unwrap();
 	let t = SignedTransaction::new(t.with_signature(signature.clone(), None)).unwrap();

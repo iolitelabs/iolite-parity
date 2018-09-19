@@ -88,6 +88,9 @@ impl Private for PrivateClient {
 			value: Some(transaction.value.into()),
 			data: Some(transaction.data.into()),
 			condition: None,
+                        //TODO: <IOLITE> check this test
+                        metadata: Some(transaction.metadata.into()),
+                        metadata_limit: Some(transaction.metadataLimit.into()),
 		};
 
 		Ok(PrivateTransactionReceiptAndTransaction {

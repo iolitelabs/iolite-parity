@@ -238,6 +238,8 @@ impl LightFetch {
 			let action = req.to.map_or(Action::Create, Action::Call);
 			let value = req.value.unwrap_or_else(U256::zero);
 			let data = req.data.unwrap_or_default();
+			let metadata = req.metadata.unwrap_or_else(Vec::new);
+			let metadata_limit = req.metadata_limit.unwrap_or_else(U256::zero);
 
 			future::done(match (nonce, req.gas) {
 				(Some(n), Some(gas)) => Ok((true, EthTransaction {
@@ -249,8 +251,8 @@ impl LightFetch {
 					data: data,
                                         //TODO: <IOLITE> probably later we will need to pass some metadata and
                                         // metadataLimit here also
-					metadata: vec![],
-					metadataLimit: U256::zero(),
+					metadata: metadata,
+					metadataLimit: metadata_limit,
 					isOld: false,
 					..Default::default()
 				})),
@@ -263,8 +265,8 @@ impl LightFetch {
 					data: data,
                                         //TODO: <IOLITE> probably later we will need to pass some metadata and
                                         // metadataLimit here also
-					metadata: vec![],
-					metadataLimit: U256::zero(),
+					metadata: metadata,
+					metadataLimit: metadata_limit,
 					isOld: false,
 					..Default::default()
 				})),
