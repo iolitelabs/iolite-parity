@@ -73,7 +73,6 @@ use trace::{TraceDB, ImportRequest as TraceImportRequest, LocalizedTrace, Databa
 use transaction::{self, LocalizedTransaction, UnverifiedTransaction, SignedTransaction, Transaction, Action};
 use types::filter::Filter;
 use types::mode::Mode as IpcMode;
-use types::metalogs::MetaLogs;
 use verification;
 use verification::{PreverifiedBlock, Verifier};
 use verification::queue::BlockQueue;
@@ -1450,13 +1449,14 @@ impl Call for Client {
 		let cond = |gas| {
 			let mut tx = t.as_unsigned().clone();
 			tx.gas = gas;
+                        tx.nonce = tx.nonce + U256::from(1);
 			let tx = tx.fake_sign(sender);
 
 			let mut clone = state.clone();
-			Ok(Executive::new(&mut clone, &env_info, self.engine.machine())
-				.transact_virtual(&tx, options())
-				.map(|r| r.exception.is_none())
-				.unwrap_or(false))
+			Ok(clone
+			    .execute(&env_info, self.engine.machine(), &tx, options(), true)
+			    .map(|r| r.exception.is_none())
+			    .unwrap_or(false))
 		};
 
 		if !cond(upper)? {
@@ -2326,6 +2326,7 @@ fn transaction_receipt(machine: &::machine::EthereumMachine, mut tx: LocalizedTr
 
 #[cfg(test)]
 mod tests {
+        use ::types::metalogs::MetaLogs;
 
 	#[test]
 	fn should_not_cache_details_before_commit() {

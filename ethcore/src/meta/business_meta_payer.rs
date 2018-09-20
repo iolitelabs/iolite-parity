@@ -1,3 +1,4 @@
+use vm::Error as VmError;
 use std::ops::Deref;
 use transaction::{SignedTransaction, Action};
 use types::metalogs::{MetaLogs, MetaLog};
@@ -14,6 +15,7 @@ pub struct BusinessMetaPayer<'a, T: 'a + StateBackend> {
 
     transaction: &'a SignedTransaction,
     evm: &'a mut Executive<'a, T>,
+    evm_error: Option<VmError>,
 }
 
 impl<'a, T: 'a + StateBackend> BusinessMetaPayer<'a, T> {
@@ -23,7 +25,12 @@ impl<'a, T: 'a + StateBackend> BusinessMetaPayer<'a, T> {
             nonce: nonce,
             transaction: transaction,
             evm: executive,
+            evm_error: None,
         }
+    }
+
+    pub fn take_evm_error(&mut self) -> Option<VmError> {
+        self.evm_error.take()
     }
 }
 
@@ -37,6 +44,9 @@ impl<'a, T: 'a + StateBackend> Deref for BusinessMetaPayer<'a, T> {
 
 impl<'a, T: 'a + StateBackend> MetaPay for BusinessMetaPayer<'a, T> {
     fn pay(&mut self, gas: u64) -> Result<(U256, u64), String> {
+        // Discard previous evm error if any
+        self.evm_error = None;
+
         if self.payer.meta_logs.logs().len() != 1 {
             return Err("Only one recipient is allowed for business call".to_string());
         }
@@ -46,13 +56,14 @@ impl<'a, T: 'a + StateBackend> MetaPay for BusinessMetaPayer<'a, T> {
             _ => return Err(MetaUtilError::InsufficientFunds.to_string()),
         };
 
-        let gas_used = try_pay(self.payer.from, self.nonce, &self.payer.meta_logs.logs()[0], self.transaction, self.evm, gas)?;
+        let (gas_used, evm_error) = try_pay(self.payer.from, self.nonce, &self.payer.meta_logs.logs()[0], self.transaction, self.evm, gas)?;
+        self.evm_error = evm_error;
 
         Ok((sum, gas_used))
     }
 }
 
-fn try_pay<'a, T: 'a + StateBackend>(from: Address, nonce: u64, log: &MetaLog, transaction: &SignedTransaction, evm: &mut Executive<'a, T>, gas: u64) -> Result<u64, String> {
+fn try_pay<'a, T: 'a + StateBackend>(from: Address, nonce: u64, log: &MetaLog, transaction: &SignedTransaction, evm: &mut Executive<'a, T>, gas: u64) -> Result<(u64, Option<VmError>), String> {
     let mut gas_left = gas;
     let transact_options = TransactOptions::with_tracing_and_vm_tracing();
     let mut tx = transaction.clone();
@@ -66,10 +77,11 @@ fn try_pay<'a, T: 'a + StateBackend>(from: Address, nonce: u64, log: &MetaLog, t
         Ok(executed_result) => executed_result,
         Err(e) => return Err(e.to_string()),
     };
+
     //TODO: <IOLITE> is gas_left == refunded ?
     gas_left = result.refunded.as_u64(); // Will panic if number is larger then 2^64
     let gas_used = result.gas_used.as_u64();
     info!("[iolite] TryPay gas={}; gas_left={}, gas_used={}", gas, gas_left, gas_used);
 
-    Ok(gas_used)
+    Ok((gas_used, result.exception))
 }

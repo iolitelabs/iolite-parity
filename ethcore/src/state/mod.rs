@@ -53,7 +53,7 @@ use trie::{Trie, TrieError, TrieDB};
 use trie::recorder::Recorder;
 
 use meta::meta_util::{*};
-use meta::{MetaPay, BusinessMetaPayer};
+use meta::{MetaPay};
 use types::metalogs::{MetaLogs};
 
 
@@ -766,7 +766,7 @@ impl<B: Backend> State<B> {
 	//
 	// `virt` signals that we are executing outside of a block set and restrictions like
 	// gas limits and gas costs should be lifted.
-	fn execute<T, V>(&mut self, env_info: &EnvInfo, machine: &Machine, t: &SignedTransaction, options: TransactOptions<T, V>, virt: bool)
+	pub fn execute<T, V>(&mut self, env_info: &EnvInfo, machine: &Machine, t: &SignedTransaction, options: TransactOptions<T, V>, virt: bool)
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: trace::Tracer, V: trace::VMTracer,
 	{
                 trace!(target: "iolite_exec_trace", "[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
@@ -785,12 +785,10 @@ impl<B: Backend> State<B> {
 
                 if t.metadata.len() == 0 {
                     info!("[iolite] Metadata is empty.");
-                    //return main_transact_result;
+                    return main_transact_result;
                 }
 
-                //let mut read_only_state = self.create_copy();
-                //let mut read_only_e = Executive::new(read_only_state, env_info, machine);
-                self.checkpoint();
+                //self.checkpoint();
                 let use_business_metadata = true;
                 if ! use_business_metadata {
                     let mut read_only_executive = Executive::new(self, env_info, machine);
@@ -806,15 +804,15 @@ impl<B: Backend> State<B> {
                         },
                         Err(e) => {
                             info!("[iolite] {}", e);
-                            return main_transact_result;
-                            //return Err(ExecutionError::Internal(e));
+                            return Err(ExecutionError::Internal(e));
+                            //return main_transact_result;
                         },
                     };
 
                     let mut original_tx_ok = true;
                     let gas = match main_transact_result.as_ref() {
                         Ok(ref res) => res.refunded.as_u64(),
-                        Err(_e) => {
+                        Err(_) => {
                             original_tx_ok = false;
                             0u64
                         },
@@ -827,9 +825,10 @@ impl<B: Backend> State<B> {
 
                     let _payment = match payer.pay(gas) {
                         Ok((paid_amount, _)) => paid_amount,
-                        _ => {
-                            info!("[iolite] {}", MetaUtilError::InsufficientFunds.to_string());
-                            return main_transact_result;
+                        Err(e) => {
+                            info!("[iolite] {}", e);
+                            return Err(ExecutionError::Internal(e));
+                            //return main_transact_result;
                         },
                     };
                 }
@@ -842,6 +841,7 @@ impl<B: Backend> State<B> {
                     let mut error_which_occured = String::new();
                     let mut meta_logs = MetaLogs::new();
                     let mut executor_gas = 0u64;
+                    info!("[iolite] Given tx gas: {}", t.as_unsigned().gas);
                     {
                         let mut read_only_executive = Executive::new(self, env_info, machine);
                         let res = unpack_business_metadata(t.sender(),
@@ -863,45 +863,19 @@ impl<B: Backend> State<B> {
                     if error_occured {
                         info!("[iolite] {}", error_which_occured);
                         self.revert_to_checkpoint();
-                        return main_transact_result
+                        return Err(ExecutionError::Internal(error_which_occured));
+                        //return main_transact_result
                     }
                     info!("[iolite] Successfully unpacked business metadata.");
+                    info!("[iolite] Executor estimate gas: {}", executor_gas);
                     error_occured = false;
                     error_which_occured = String::new();
-
-                    //{
-                    //    let mut read_only_executive = Executive::new(self, env_info, machine);
-                    //    // If the business contract call is not correct, then the transaction
-                    //    // will be considered a failure, but the logic of the pure transaction
-                    //    // will be executed
-                    //    let mut try_payer = BusinessMetaPayer::new(t.sender(),
-                    //                                               t._get_nonce() + 2,
-                    //                                               meta_logs.clone(),
-                    //                                               t.metadataLimit,
-                    //                                               t,
-                    //                                               &mut read_only_executive);
-                    //    //TODO: <IOLITE> Replace t.gas with metagas
-                    //    match try_payer.pay(t.gas.as_u64()) {
-                    //        Ok(_) => info!("[iolite] Test payer succeeded."),
-                    //        Err(e) => {
-                    //            error_which_occured = e;
-                    //            error_occured = true;
-                    //        }
-                    //    };
-                    //}
-                    //if error_occured {
-                    //    info!("[iolite] {}", error_which_occured);
-                    //    self.revert_to_checkpoint();
-                    //    return main_transact_result
-                    //}
-                    //error_occured = false;
-                    //error_which_occured = String::new();
                     self.revert_to_checkpoint();
 
 
                     self.checkpoint();
-                    // Used for `break` only
                     let mut result_value = main_transact_result?;
+                    // Used for `break` only
                     loop {
                         let mut write_executive = Executive::new(self, env_info, machine);
                         //TODO: <Kirill A> get rid of clonning metalogs. Use reference of metalogs in payers instead.
@@ -911,7 +885,7 @@ impl<B: Backend> State<B> {
                                                               executor_gas,
                                                               t,
                                                               &mut write_executive);
-                        let (mut payer, payment, meta_gas) = match res {
+                        let (mut payer, _payment, meta_gas) = match res {
                                 Ok(res) => {
                                     res
                                 },
@@ -925,9 +899,12 @@ impl<B: Backend> State<B> {
                         if ! error_occured {
                             let pure_tx_gas_used = result_value.gas_used.as_u64();
                             info!("[iolite] Successfully prepared business meta payer.");
-                            info!("[iolite] payer.Pay.before | Gas: {}", pure_tx_gas_used);
+                            info!("[iolite] Payer estimate gas: {}", meta_gas);
+                            info!("[iolite] Estimated total gas: {}", pure_tx_gas_used + meta_gas);
+                            info!("[iolite] payer.Pay.before | Pure tx gas used: {}", pure_tx_gas_used);
                             payer.nonce = t._get_nonce() + 1;
-                            let (_, payer_meta_gas_used) = match payer.pay(meta_gas) {
+                            let gas_left = (t.as_unsigned().gas - result_value.gas_used).as_u64();
+                            let (_, payer_meta_gas_used) = match payer.pay(gas_left/*meta_gas*/) {
                                 Ok(ret) => ret,
                                 Err(e) => {
                                     error_occured = true;
@@ -936,16 +913,30 @@ impl<B: Backend> State<B> {
                                 }
                             };
 
-                            info!("[iolite] payer.Pay.after | Gas left: {}", meta_gas-payer_meta_gas_used);
-                            info!("[iolite] payer.Pay.after | Meta Gas used: {}", payer_meta_gas_used);
-                            //TODO: <IOLITE> check if the formula correct
-                            let meta_gas_used = payer_meta_gas_used;
-                            info!("[iolite] Metagas used: {}", meta_gas_used);
+                            // If the transaction is called in virtual context (i.e. by performing
+                            // `estimate_gas()` RPC request, transaction would be considered to be
+                            // a failure if any EVM error occured during execution of metadata
+                            // payer. This gives us an opportunity to correctly estimate needed
+                            // transaction gas both to process pure eth transaction and handle
+                            // IOLITE metadata.
+                            if virt {
+                                if let Some(evm_error) = payer.take_evm_error() {
+                                    error_occured = true;
+                                    error_which_occured = evm_error.to_string();
+                                    info!("[iolite] During virtual call got evm error: {}", evm_error.to_string());
+                                    break;
+                                }
+                            }
 
+                            let meta_gas_used = payer_meta_gas_used;
+                            info!("[iolite] payer.Pay.after | Meta gas left: {}", meta_gas-payer_meta_gas_used);
+                            info!("[iolite] payer.Pay.after | Meta gas used: {}", meta_gas_used);
+                            info!("[iolite] Total gas used: {}", pure_tx_gas_used + meta_gas_used);
+
+                            result_value.exception = payer.take_evm_error();
                             result_value.gas_used = U256::from(pure_tx_gas_used + meta_gas_used);
                             result_value.cumulative_gas_used = result_value.cumulative_gas_used.add(U256::from(meta_gas_used));
                             result_value.meta_logs = meta_logs;
-                            info!("[iolite] Updated new gas...");
                         }
                         break;
                     }
@@ -968,8 +959,6 @@ impl<B: Backend> State<B> {
                     //if gas < tx_gas {
                     //    ExecutionError::NotEnoughBaseGas(txGas, gas);
                     //}
-                    //info!("[iolite] Apply message. Gas: {gas}; MetaGas: {meta_gas}, Full gas: {full_gas}",
-                    //      gas=tx_gas, meta_gas=meta_gas, full_gas=gas);
                 }
 
                 main_transact_result
