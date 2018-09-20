@@ -15,7 +15,6 @@ pub struct BusinessMetaExecutor<'a, B: 'a + StateBackend> {
 
     transaction: &'a SignedTransaction,
     from: Address,
-    nonce: u64,
     read_evm: &'a mut Executive<'a, B>,
 }
 
@@ -28,13 +27,12 @@ impl<'a, B: 'a + StateBackend> Deref for BusinessMetaExecutor<'a, B> {
 }
 
 impl<'a, B: 'a + StateBackend> BusinessMetaExecutor<'a, B> {
-    pub fn new(metadata: Bytes, transaction: &'a SignedTransaction, from: Address, nonce: u64, read_evm: &'a mut Executive<'a, B>)
+    pub fn new(metadata: Bytes, transaction: &'a SignedTransaction, from: Address, read_evm: &'a mut Executive<'a, B>)
             -> Self {
         BusinessMetaExecutor {
             executor: BaseMetaExecutor { metadata: metadata },
             transaction: transaction,
             from: from,
-            nonce: nonce,
             read_evm: read_evm,
         }
     }
@@ -53,11 +51,10 @@ impl<'a, B: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, B> {
         //TODO: Copy fields from business metadata to tx
         let mut tx = self.transaction.get_copy_with_data_equals(&business_metadata.input);
         tx._set_sender(self.from);
-        tx._set_nonce(self.nonce);
         tx._as_mut_unverified_tx()._as_mut_unsigned().value = U256::zero();
         tx._as_mut_unverified_tx()._as_mut_unsigned().action = Action::Call(business_metadata.business);
 
-        let transact_options = TransactOptions::with_no_tracing();//with_tracing_and_vm_tracing();
+        let transact_options = TransactOptions::with_no_tracing().dont_check_nonce();
         let result = match self.read_evm.transact_virtual(&tx, transact_options) {
             Ok(executed_result) => executed_result,
             Err(e) => return Err(e.to_string()),

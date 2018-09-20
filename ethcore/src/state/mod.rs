@@ -846,7 +846,6 @@ impl<B: Backend> State<B> {
                         let mut read_only_executive = Executive::new(self, env_info, machine);
                         let res = unpack_business_metadata(t.sender(),
                                                            t.metadata.clone(),
-                                                           t._get_nonce() + 1,
                                                            t,
                                                            &mut read_only_executive);
                         let ret = match res {
@@ -867,7 +866,7 @@ impl<B: Backend> State<B> {
                         //return main_transact_result
                     }
                     info!("[iolite] Successfully unpacked business metadata.");
-                    info!("[iolite] Executor estimate gas: {}", executor_gas);
+                    info!("[iolite] Executor estimate intrinsic gas: {}", executor_gas);
                     error_occured = false;
                     error_which_occured = String::new();
                     self.revert_to_checkpoint();
@@ -899,12 +898,14 @@ impl<B: Backend> State<B> {
                         if ! error_occured {
                             let pure_tx_gas_used = result_value.gas_used.as_u64();
                             info!("[iolite] Successfully prepared business meta payer.");
-                            info!("[iolite] Payer estimate gas: {}", meta_gas);
-                            info!("[iolite] Estimated total gas: {}", pure_tx_gas_used + meta_gas);
+                            info!("[iolite] Payer estimate intrinsic gas: {}", meta_gas);
+                            info!("[iolite] Estimated total intrinsic gas: {}", pure_tx_gas_used + meta_gas);
                             info!("[iolite] payer.Pay.before | Pure tx gas used: {}", pure_tx_gas_used);
                             payer.nonce = t._get_nonce() + 1;
+                            // Ignore nonce while called in virtual context (i.e. `estimate_gas()`)
+                            payer.set_ignore_nonce(virt);
                             let gas_left = (t.as_unsigned().gas - result_value.gas_used).as_u64();
-                            let (_, payer_meta_gas_used) = match payer.pay(gas_left/*meta_gas*/) {
+                            let (_, payer_meta_gas_used) = match payer.pay(gas_left) {
                                 Ok(ret) => ret,
                                 Err(e) => {
                                     error_occured = true;

@@ -74,7 +74,6 @@ pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata:
 
 pub fn unpack_business_metadata<'a, T: 'a + StateBackend>(from: Address,
                                                           metadata: Bytes,
-                                                          nonce: u64,
                                                           transaction: &'a SignedTransaction,
                                                           read_evm: &'a mut Executive<'a, T>)
         // return (meta_logs, executor_gas)
@@ -82,7 +81,7 @@ pub fn unpack_business_metadata<'a, T: 'a + StateBackend>(from: Address,
 {
     info!("[iolite] Unpack business metadata.");
 
-    let mut executor = BusinessMetaExecutor::new(metadata, transaction, from, nonce, read_evm);
+    let mut executor = BusinessMetaExecutor::new(metadata, transaction, from, read_evm);
 
     //TODO: <IOLITE> do we really need this?
     let executor_gas = executor.intrinsic_gas()?;
