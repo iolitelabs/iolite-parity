@@ -52,6 +52,7 @@ use trie;
 use trie::{Trie, TrieError, TrieDB};
 use trie::recorder::Recorder;
 
+use vm;
 use meta::meta_util::{*};
 use meta::{MetaPay};
 use types::metalogs::{MetaLogs};
@@ -750,6 +751,7 @@ impl<B: Backend> State<B> {
 			TransactionOutcome::StateRoot(self.root().clone())
 		};
 
+                info!("[iolite] Transaction outcome: {:?}", outcome);
 		let output = e.output;
 		let receipt = Receipt::new(outcome, e.cumulative_gas_used, e.logs, e.meta_logs);
 		trace!(target: "state", "Transaction receipt: {:?}", receipt);
@@ -862,13 +864,17 @@ impl<B: Backend> State<B> {
                     if error_occured {
                         info!("[iolite] {}", error_which_occured);
                         self.revert_to_checkpoint();
-                        return Err(ExecutionError::Internal(error_which_occured));
+                        let mut ret = main_transact_result?;
+                        //TODO: <Kirill A> use another than "Wasm" error type with string info
+                        ret.exception = Some(vm::Error::Wasm(error_which_occured));
+                        return Ok(ret);
+                        //return Err(ExecutionError::Internal(error_which_occured));
                         //return main_transact_result
                     }
                     info!("[iolite] Successfully unpacked business metadata.");
                     info!("[iolite] Executor estimate intrinsic gas: {}", executor_gas);
-                    error_occured = false;
-                    error_which_occured = String::new();
+                    //error_occured = false;
+                    //error_which_occured = String::new();
                     self.revert_to_checkpoint();
 
 
@@ -944,7 +950,10 @@ impl<B: Backend> State<B> {
                     if error_occured {
                         info!("[iolite] {}", error_which_occured);
                         self.revert_to_checkpoint();
-                        return Err(ExecutionError::Internal(error_which_occured));
+                        //TODO: <Kirill A> use another than "Wasm" error type with string info
+                        result_value.exception = Some(vm::Error::Wasm(error_which_occured));
+                        return Ok(result_value);
+                        //return Err(ExecutionError::Internal(error_which_occured));
                     }
                     info!("[iolite] Metadata executed successfully");
                     self.discard_checkpoint();
