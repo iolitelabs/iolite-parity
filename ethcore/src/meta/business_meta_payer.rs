@@ -11,8 +11,6 @@ use meta::meta_util::{MetaUtilError};
 
 pub struct BusinessMetaPayer<'a, T: 'a + StateBackend> {
     payer: BaseMetaPayer,
-    pub nonce: u64,
-    is_ignore_nonce: bool,
 
     transaction: &'a SignedTransaction,
     evm: &'a mut Executive<'a, T>,
@@ -20,11 +18,9 @@ pub struct BusinessMetaPayer<'a, T: 'a + StateBackend> {
 }
 
 impl<'a, T: 'a + StateBackend> BusinessMetaPayer<'a, T> {
-    pub fn new(from: Address, nonce: u64, meta_logs: MetaLogs, meta_limit: U256, transaction: &'a SignedTransaction, executive: &'a mut Executive<'a, T>) -> Self {
+    pub fn new(from: Address, meta_logs: MetaLogs, meta_limit: U256, transaction: &'a SignedTransaction, executive: &'a mut Executive<'a, T>) -> Self {
         BusinessMetaPayer {
             payer: BaseMetaPayer::new(from, meta_logs, meta_limit),
-            nonce: nonce,
-            is_ignore_nonce: false,
             transaction: transaction,
             evm: executive,
             evm_error: None,
@@ -33,14 +29,6 @@ impl<'a, T: 'a + StateBackend> BusinessMetaPayer<'a, T> {
 
     pub fn take_evm_error(&mut self) -> Option<VmError> {
         self.evm_error.take()
-    }
-
-    pub fn set_ignore_nonce(&mut self, ignore_nonce: bool) {
-        self.is_ignore_nonce = ignore_nonce;
-    }
-
-    pub fn is_ignore_nonce(&self) -> bool {
-        self.is_ignore_nonce
     }
 }
 
@@ -67,35 +55,29 @@ impl<'a, T: 'a + StateBackend> MetaPay for BusinessMetaPayer<'a, T> {
         };
 
         let (gas_used, evm_error) = try_pay(self.payer.from,
-                                            self.nonce,
                                             &self.payer.meta_logs.logs()[0],
                                             self.transaction,
                                             self.evm,
-                                            gas,
-                                            self.is_ignore_nonce)?;
+                                            gas)?;
         self.evm_error = evm_error;
 
         Ok((sum, gas_used))
     }
 }
 
-fn try_pay<'a, T: 'a + StateBackend>(from: Address, nonce: u64,
-                                     log: &MetaLog, transaction: &SignedTransaction, evm: &mut Executive<'a, T>,
-                                     gas: u64, ignore_nonce: bool)
+fn try_pay<'a, T: 'a + StateBackend>(from: Address, log: &MetaLog,
+                                     transaction: &SignedTransaction, evm: &mut Executive<'a, T>,
+                                     gas: u64)
         -> Result<(u64, Option<VmError>), String>
 {
     let mut gas_left = gas;
     let mut tx = transaction.clone();
     tx._set_sender(from);
-    tx._set_nonce(nonce);
     tx._as_mut_unverified_tx()._as_mut_unsigned().value = log.amount;
     tx._as_mut_unverified_tx()._as_mut_unsigned().gas = U256::from(gas_left);
     tx._as_mut_unverified_tx()._as_mut_unsigned().data = vec![];
     tx._as_mut_unverified_tx()._as_mut_unsigned().action = Action::Call(log.recipient);
-    let transact_options = match ignore_nonce {
-        true => TransactOptions::with_tracing_and_vm_tracing().dont_check_nonce(),
-        false => TransactOptions::with_tracing_and_vm_tracing(),
-    };
+    let transact_options = TransactOptions::with_tracing_and_vm_tracing().dont_check_nonce();
 
     let result = match evm.transact(&tx, transact_options) {
         Ok(executed_result) => executed_result,

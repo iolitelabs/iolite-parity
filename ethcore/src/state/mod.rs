@@ -918,9 +918,6 @@ impl<B: Backend> State<B> {
                             info!("[iolite] Payer estimate intrinsic gas: {}", meta_gas);
                             info!("[iolite] Estimated total intrinsic gas: {}", pure_tx_gas_used + meta_gas);
                             info!("[iolite] payer.Pay.before | Pure tx gas used: {}", pure_tx_gas_used);
-                            payer.nonce = t._get_nonce() + 1;
-                            // Ignore nonce while called in virtual context (i.e. `estimate_gas()`)
-                            payer.set_ignore_nonce(virt);
                             let gas_left = (t.as_unsigned().gas - result_value.gas_used).as_u64();
                             let (_, payer_meta_gas_used) = match payer.pay(gas_left) {
                                 Ok(ret) => ret,

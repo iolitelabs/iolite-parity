@@ -101,7 +101,7 @@ pub fn prepare_business_meta_payer<'a, T: 'a + StateBackend>(from: Address,
 {
     info!("[iolite] Prepare business meta payer. Metalimit={}", meta_limit);
 
-    let payer = BusinessMetaPayer::new(from, 0u64, meta_logs, meta_limit, transaction, write_evm);
+    let payer = BusinessMetaPayer::new(from, meta_logs, meta_limit, transaction, write_evm);
     //TODO: <IOLITE> do we really need this?
     let payer_gas = payer.intrinsic_gas()?;
 
