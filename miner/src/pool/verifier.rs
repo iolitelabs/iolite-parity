@@ -34,6 +34,8 @@ use txpool;
 use super::client::{Client, TransactionType};
 use super::VerifiedTransaction;
 
+use ethcore_types::business_metadata::BusinessMetadata;
+
 /// Verification options.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Options {
@@ -306,6 +308,12 @@ impl<C: Client> txpool::Verifier<Transaction> for Verifier<C, ::pool::scoring::N
 			);
 			bail!(transaction::Error::Old);
 		}
+
+                if let Err(err) = BusinessMetadata::is_valid(&transaction.as_unsigned().metadata) {
+                    info!("[iolite] Tx pool metadata error: {}", err);
+                    trace!(target: "txqueue", "Invalid metadata provided: {}", err);
+                    bail!(transaction::Error::InvalidMetadata(err))
+                };
 
 		let priority = match (is_own || account_details.is_local, is_retracted) {
 			(true, _) => super::Priority::Local,
