@@ -820,6 +820,13 @@ impl miner::MinerService for Miner {
 		trace!(target: "own_tx", "Importing transaction: {:?}", pending);
 
 		let client = self.pool_client(chain);
+		//let tx = pending.clone().transaction;
+		//let block_number = chain.chain_info().best_block_number;
+		//let pending_state = self.pending_state(block_number)?;
+		//let pending_header = self.pending_block_header(block_number)?;
+		//let state = State::from_existing(pending_state, pending_header.state_root().clone(), engine.account_start_nonce(pending_header.number() + 1));
+
+
 		let imported = self.transaction_queue.import(
 			client,
 			vec![pool::verifier::Transaction::Local(pending)]
@@ -978,6 +985,7 @@ impl miner::MinerService for Miner {
 				.map(|index| {
 					let receipts = pending.receipts();
 					let prev_gas = if index == 0 { Default::default() } else { receipts[index - 1].gas_used };
+					let prev_meta_gas = if index == 0 { Default::default() } else { receipts[index - 1].meta_gas_used };
 					let tx = &txs[index];
 					let receipt = &receipts[index];
 					RichReceipt {
@@ -985,6 +993,7 @@ impl miner::MinerService for Miner {
 						transaction_index: index,
 						cumulative_gas_used: receipt.gas_used,
 						gas_used: receipt.gas_used - prev_gas,
+						meta_gas_used: receipt.meta_gas_used - prev_meta_gas,
 						contract_address: match tx.action {
 							Action::Call(_) => None,
 							Action::Create => {
@@ -993,6 +1002,7 @@ impl miner::MinerService for Miner {
 							}
 						},
 						logs: receipt.logs.clone(),
+						meta_logs: receipt.meta_logs.clone(),
 						log_bloom: receipt.log_bloom,
 						outcome: receipt.outcome.clone(),
 					}

@@ -1015,6 +1015,7 @@ fn rpc_eth_transaction_receipt() {
 		block_number: 0x4510c,
 		cumulative_gas_used: U256::from(0x20),
 		gas_used: U256::from(0x10),
+		meta_gas_used: U256::zero,
 		contract_address: None,
 		meta_logs: MetaLogs::new(),
 		logs: vec![LocalizedLogEntry {

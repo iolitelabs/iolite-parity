@@ -237,8 +237,10 @@ impl MinerService for TestMinerService {
 				transaction_index: Default::default(),
 				cumulative_gas_used: r.gas_used.clone(),
 				gas_used: r.gas_used.clone(),
+				meta_gas_used: r.meta_gas_used.clone(),
 				contract_address: None,
 				logs: r.logs.clone(),
+				meta_logs: r.meta_logs.clone(),
 				log_bloom: r.log_bloom,
 				outcome: r.outcome.clone(),
 			}

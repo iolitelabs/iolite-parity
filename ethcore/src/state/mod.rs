@@ -753,7 +753,7 @@ impl<B: Backend> State<B> {
 
                 trace!(target: "iolite_exec_trace", "[apply_with_tracing] Transaction outcome: {:?}", outcome);
 		let output = e.output;
-		let receipt = Receipt::new(outcome, e.cumulative_gas_used, e.logs, e.meta_logs);
+		let receipt = Receipt::new(outcome, e.cumulative_gas_used, e.meta_gas_used, e.logs, e.meta_logs);
 		trace!(target: "state", "Transaction receipt: {:?}", receipt);
 
 		Ok(ApplyOutcome {
@@ -939,6 +939,7 @@ impl<B: Backend> State<B> {
 
                             result_value.exception = payer.take_evm_error();
                             result_value.gas_used = U256::from(pure_tx_gas_used + meta_gas_used);
+                            result_value.meta_gas_used = U256::from(meta_gas_used);
                             result_value.cumulative_gas_used = result_value.cumulative_gas_used.add(U256::from(meta_gas_used));
                             result_value.meta_logs = meta_logs;
 

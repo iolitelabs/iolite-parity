@@ -39,6 +39,9 @@ pub struct Executed<T = FlatTrace, V = VMTrace> {
 	/// Gas used during execution of transaction.
 	pub gas_used: U256,
 
+	/// Meta gas used during execution of transaction.
+	pub meta_gas_used: U256,
+
 	/// Gas refunded after the execution of transaction.
 	/// To get gas that was required up front, add `refunded` and `gas_used`.
 	pub refunded: U256,

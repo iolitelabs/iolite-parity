@@ -1743,7 +1743,7 @@ mod tests {
 		};
 
 		let full_req = Request::Receipts(req.clone());
-		let receipt = Receipt::new(TransactionOutcome::Unknown, Default::default(), Vec::new(), MetaLogs::new());
+		let receipt = Receipt::new(TransactionOutcome::Unknown, Default::default(), Default::default(), Vec::new(), MetaLogs::new());
 		let res = ReceiptsResponse {
 			receipts: vec![receipt.clone(), receipt],
 		};
@@ -1908,7 +1908,7 @@ mod tests {
 		let reqs = vec![
 			Response::Headers(HeadersResponse { headers: vec![] }),
 			Response::HeaderProof(HeaderProofResponse { proof: vec![], hash: Default::default(), td: 100.into()}),
-			Response::Receipts(ReceiptsResponse { receipts: vec![Receipt::new(TransactionOutcome::Unknown, Default::default(), Vec::new(), MetaLogs::new())] }),
+			Response::Receipts(ReceiptsResponse { receipts: vec![Receipt::new(TransactionOutcome::Unknown, Default::default(), Default::default(), Vec::new(), MetaLogs::new())] }),
 			Response::Body(BodyResponse { body: body }),
 			Response::Account(AccountResponse {
 				proof: vec![],

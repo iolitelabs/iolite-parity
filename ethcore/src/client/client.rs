@@ -2292,6 +2292,10 @@ fn transaction_receipt(machine: &::machine::EthereumMachine, mut tx: LocalizedTr
 		0 => 0.into(),
 		i => receipts.get(i - 1).expect("All previous receipts are provided; qed").gas_used,
 	};
+	let prior_meta_gas_used = match tx.transaction_index {
+		0 => 0.into(),
+		i => receipts.get(i - 1).expect("All previous receipts are provided; qed").meta_gas_used,
+	};
 	let no_of_logs = receipts.into_iter().map(|receipt| receipt.logs.len()).sum::<usize>();
 	let transaction_hash = tx.hash();
 	let block_hash = tx.block_hash;
@@ -2310,6 +2314,7 @@ fn transaction_receipt(machine: &::machine::EthereumMachine, mut tx: LocalizedTr
 			Action::Create => Some(contract_address(machine.create_address_scheme(block_number), &sender, &tx.nonce, &tx.data).0)
 		},
 		meta_logs: receipt.meta_logs,
+		meta_gas_used: receipt.meta_gas_used - prior_meta_gas_used,
 		logs: receipt.logs.into_iter().enumerate().map(|(i, log)| LocalizedLogEntry {
 			entry: log,
 			block_hash: block_hash,
@@ -2409,11 +2414,15 @@ mod tests {
 			gas_used: 5.into(),
 			log_bloom: Default::default(),
 			logs: vec![logs[0].clone()],
+			meta_logs: MetaLogs::new(),
+			meta_gas_used: Default::default(),
 		}, Receipt {
 			outcome: TransactionOutcome::StateRoot(state_root),
 			gas_used: gas_used,
 			log_bloom: Default::default(),
 			logs: logs.clone(),
+			meta_logs: MetaLogs::new(),
+			meta_gas_used: Default::default(),
 		}];
 
 		// when
@@ -2428,7 +2437,6 @@ mod tests {
 			cumulative_gas_used: gas_used,
 			gas_used: gas_used - 5.into(),
 			contract_address: None,
-			meta_logs: MetaLogs::new(),
 			logs: vec![LocalizedLogEntry {
 				entry: logs[0].clone(),
 				block_hash: block_hash,
@@ -2446,6 +2454,8 @@ mod tests {
 				transaction_log_index: 1,
 				log_index: 2,
 			}],
+			meta_logs: MetaLogs::new(),
+			meta_gas_used: Default::default(),
 			log_bloom: Default::default(),
 			outcome: TransactionOutcome::StateRoot(state_root),
 		});

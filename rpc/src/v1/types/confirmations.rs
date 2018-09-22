@@ -284,7 +284,7 @@ mod tests {
 				condition: None,
                                 //TODO: <IOLITE> check this test
                                 metadata: vec![],
-                                metadata_limit: U256::zero,
+                                metadata_limit: U256::zero(),
 			}),
 			origin: Origin::Signer {
 				dapp: "http://parity.io".into(),
@@ -317,7 +317,7 @@ mod tests {
 				condition: None,
                                 //TODO: <IOLITE> check this test
                                 metadata: vec![],
-                                metadata_limit: U256::zero,
+                                metadata_limit: U256::zero(),
 			}),
 			origin: Origin::Dapps("http://parity.io".into()),
 		};

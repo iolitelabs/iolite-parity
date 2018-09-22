@@ -47,6 +47,8 @@ pub struct Receipt {
 	/// Meta logs
 	#[serde(rename="metaLogs")]
 	pub meta_logs: MetaLogs,
+	#[serde(rename="metaGasUsed")]
+	pub meta_gas_used: Option<U256>,
 	/// State Root
 	#[serde(rename="root")]
 	pub state_root: Option<H256>,
@@ -86,6 +88,7 @@ impl From<LocalizedReceipt> for Receipt {
 			contract_address: r.contract_address.map(Into::into),
 			logs: r.logs.into_iter().map(Into::into).collect(),
 			meta_logs: r.meta_logs,
+			meta_gas_used: Some(r.meta_gas_used.into()),
 			status_code: Self::outcome_to_status_code(&r.outcome),
 			state_root: Self::outcome_to_state_root(r.outcome),
 			logs_bloom: r.log_bloom.into(),
@@ -104,8 +107,8 @@ impl From<RichReceipt> for Receipt {
 			gas_used: Some(r.gas_used.into()),
 			contract_address: r.contract_address.map(Into::into),
 			logs: r.logs.into_iter().map(Into::into).collect(),
-			//TODO: <IOLITE> do we need RichReceipt and its support of MetaLogs?
-			meta_logs: MetaLogs::new(),
+			meta_logs: r.meta_logs,
+			meta_gas_used: Some(r.meta_gas_used.into()),
 			status_code: Self::outcome_to_status_code(&r.outcome),
 			state_root: Self::outcome_to_state_root(r.outcome),
 			logs_bloom: r.log_bloom.into(),
@@ -124,8 +127,8 @@ impl From<EthReceipt> for Receipt {
 			gas_used: None,
 			contract_address: None,
 			logs: r.logs.into_iter().map(Into::into).collect(),
-			//TODO: <IOLITE> do we need RichReceipt and its support of MetaLogs?
-			meta_logs: MetaLogs::new(),
+			meta_logs: r.meta_logs,
+			meta_gas_used: None,
 			status_code: Self::outcome_to_status_code(&r.outcome),
 			state_root: Self::outcome_to_state_root(r.outcome),
 			logs_bloom: r.log_bloom.into(),
@@ -149,6 +152,7 @@ mod tests {
 			block_number: Some(0x4510c.into()),
 			cumulative_gas_used: 0x20.into(),
 			gas_used: Some(0x10.into()),
+			meta_gas_used: Some(U256::zero.into()),
 			contract_address: None,
 			logs: vec![Log {
 				address: "33990122638b9132ca29c723bdf037f1a891a70c".parse().unwrap(),

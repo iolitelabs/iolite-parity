@@ -773,6 +773,7 @@ impl BlockChainClient for TestBlockChainClient {
 			let receipt = BlockReceipts::new(vec![Receipt::new(
 				TransactionOutcome::StateRoot(H256::zero()),
 				U256::zero(),
+				U256::zero(),
 				vec![],
 				MetaLogs::new())]);
 			let mut rlp = RlpStream::new();
