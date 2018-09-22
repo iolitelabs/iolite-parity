@@ -751,7 +751,7 @@ impl<B: Backend> State<B> {
 			TransactionOutcome::StateRoot(self.root().clone())
 		};
 
-                info!("[iolite] Transaction outcome: {:?}", outcome);
+                trace!(target: "iolite_exec_trace", "[apply_with_tracing] Transaction outcome: {:?}", outcome);
 		let output = e.output;
 		let receipt = Receipt::new(outcome, e.cumulative_gas_used, e.logs, e.meta_logs);
 		trace!(target: "state", "Transaction receipt: {:?}", receipt);
@@ -773,6 +773,8 @@ impl<B: Backend> State<B> {
 	{
                 trace!(target: "iolite_exec_trace", "[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
 
+                // Make checkpoint in case if metadata handling fails later
+                self.checkpoint();
                 let main_transact_result = {
                     let mut e = Executive::new(self, env_info, machine);
                     match virt {
@@ -781,12 +783,15 @@ impl<B: Backend> State<B> {
                     }
                 };
 
-                if main_transact_result.is_err() {
+                // If any error or exception occur during pure tx execution, return early
+                if main_transact_result.is_err() || main_transact_result.as_ref().unwrap().exception.is_some() {
+                    self.discard_checkpoint();
                     return main_transact_result;
                 }
 
                 if t.metadata.len() == 0 {
                     info!("[iolite] Metadata is empty.");
+                    self.discard_checkpoint();
                     return main_transact_result;
                 }
 
@@ -863,21 +868,27 @@ impl<B: Backend> State<B> {
                     }
                     if error_occured {
                         info!("[iolite] {}", error_which_occured);
+                        // Revert read-evm - metadata executor result
                         self.revert_to_checkpoint();
+                        // Revert pure tx
+                        self.revert_to_checkpoint();
+                        // Pay used gas
+                        let fees_value = t.gas_price * main_transact_result.as_ref().unwrap().gas_used;
+                        self.add_balance(&env_info.author, &fees_value, CleanupMode::NoEmpty)?;
+                        self.sub_balance(&t.sender(), &fees_value, &mut CleanupMode::NoEmpty)?;
+
                         let mut ret = main_transact_result?;
                         //TODO: <Kirill A> use another than "Wasm" error type with string info
                         ret.exception = Some(vm::Error::Wasm(error_which_occured));
                         return Ok(ret);
-                        //return Err(ExecutionError::Internal(error_which_occured));
-                        //return main_transact_result
                     }
                     info!("[iolite] Successfully unpacked business metadata.");
                     info!("[iolite] Executor estimate intrinsic gas: {}", executor_gas);
-                    //error_occured = false;
-                    //error_which_occured = String::new();
+                    // Revert state after metadata executor's processing since it was considered to
+                    // be read evm without changing any current state
                     self.revert_to_checkpoint();
 
-
+                    // Make checkpoint in case if metadata payment fails
                     self.checkpoint();
                     let mut result_value = main_transact_result?;
                     // Used for `break` only
@@ -920,23 +931,9 @@ impl<B: Backend> State<B> {
                                 }
                             };
 
-                            // If the transaction is called in virtual context (i.e. by performing
-                            // `estimate_gas()` RPC request, transaction would be considered to be
-                            // a failure if any EVM error occured during execution of metadata
-                            // payer. This gives us an opportunity to correctly estimate needed
-                            // transaction gas both to process pure eth transaction and handle
-                            // IOLITE metadata.
-                            if virt {
-                                if let Some(evm_error) = payer.take_evm_error() {
-                                    error_occured = true;
-                                    error_which_occured = evm_error.to_string();
-                                    info!("[iolite] During virtual call got evm error: {}", evm_error.to_string());
-                                    break;
-                                }
-                            }
-
                             let meta_gas_used = payer_meta_gas_used;
-                            info!("[iolite] payer.Pay.after | Meta gas left: {}", meta_gas-payer_meta_gas_used);
+                            info!("[iolite] payer.Pay.after | Meta gas left (intrinsic - gas_used): {}",
+                                  meta_gas-payer_meta_gas_used);
                             info!("[iolite] payer.Pay.after | Meta gas used: {}", meta_gas_used);
                             info!("[iolite] Total gas used: {}", pure_tx_gas_used + meta_gas_used);
 
@@ -944,31 +941,35 @@ impl<B: Backend> State<B> {
                             result_value.gas_used = U256::from(pure_tx_gas_used + meta_gas_used);
                             result_value.cumulative_gas_used = result_value.cumulative_gas_used.add(U256::from(meta_gas_used));
                             result_value.meta_logs = meta_logs;
+
+                            if let Some(evm_error) = result_value.exception.as_ref() {
+                                error_occured = true;
+                                error_which_occured = evm_error.to_string();
+                                info!("[iolite] {}", error_which_occured);
+                                break;
+                            }
                         }
                         break;
                     }
                     if error_occured {
                         info!("[iolite] {}", error_which_occured);
+                        // Revert metadata results
                         self.revert_to_checkpoint();
+                        // Revert pure tx transaction
+                        self.revert_to_checkpoint();
+                        // Pay used gas
+                        let fees_value = t.gas_price * result_value.gas_used;
+                        self.add_balance(&env_info.author, &fees_value, CleanupMode::NoEmpty)?;
+                        self.sub_balance(&t.sender(), &fees_value, &mut CleanupMode::NoEmpty)?;
+
                         //TODO: <Kirill A> use another than "Wasm" error type with string info
                         result_value.exception = Some(vm::Error::Wasm(error_which_occured));
                         return Ok(result_value);
-                        //return Err(ExecutionError::Internal(error_which_occured));
                     }
+
                     info!("[iolite] Metadata executed successfully");
                     self.discard_checkpoint();
                     return Ok(result_value);
-
-                    //TODO: <IOLITE> txGas in Geth is obtained by intrinsic_gas() call, but we
-                    // don't have such a method here.
-                    //// let gas = tx_gas + meta_gas
-                    //let gas = meta_gas;
-
-                    //TODO: <IOLITE> This is simillar to the geth's code. See the problem above.
-                    //// Make sure we don't exceed uint64
-                    //if gas < tx_gas {
-                    //    ExecutionError::NotEnoughBaseGas(txGas, gas);
-                    //}
                 }
 
                 main_transact_result
