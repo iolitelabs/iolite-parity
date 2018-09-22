@@ -876,6 +876,8 @@ impl<B: Backend> State<B> {
                         let fees_value = t.gas_price * main_transact_result.as_ref().unwrap().gas_used;
                         self.add_balance(&env_info.author, &fees_value, CleanupMode::NoEmpty)?;
                         self.sub_balance(&t.sender(), &fees_value, &mut CleanupMode::NoEmpty)?;
+                        // Increment nonce for sender
+                        self.inc_nonce(&t.sender())?;
 
                         let mut ret = main_transact_result?;
                         //TODO: <Kirill A> use another than "Wasm" error type with string info
@@ -959,6 +961,8 @@ impl<B: Backend> State<B> {
                         let fees_value = t.gas_price * result_value.gas_used;
                         self.add_balance(&env_info.author, &fees_value, CleanupMode::NoEmpty)?;
                         self.sub_balance(&t.sender(), &fees_value, &mut CleanupMode::NoEmpty)?;
+                        // Increment nonce for sender
+                        self.inc_nonce(&t.sender())?;
 
                         //TODO: <Kirill A> use another than "Wasm" error type with string info
                         result_value.exception = Some(vm::Error::Wasm(error_which_occured));
