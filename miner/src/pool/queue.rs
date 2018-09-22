@@ -436,6 +436,9 @@ impl TransactionQueue {
 			let senders = pool.senders().cloned().collect();
 			senders
 		};
+		trace!(target: "iolite_pool_trace", "Miner-pool-queue: cull()");
+		trace!(target: "iolite_pool_trace", "Miner-pool-queue: senders: {:?}", senders);
+		trace!(target: "iolite_pool_trace", "Miner-pool-queue: stale_id: {:?}", stale_id);
 		for chunk in senders.chunks(CULL_SENDERS_CHUNK) {
 			trace_time!("pool::cull::chunk");
 			let state_readiness = ready::State::new(client.clone(), stale_id, nonce_cap);

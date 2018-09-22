@@ -185,6 +185,7 @@ impl<T: fmt::Debug, S: Scoring<T>> Transactions<T, S> {
 
 		let mut first_non_stalled = 0;
 		for tx in &self.transactions {
+                        trace!(target: "iolite_pool_trace", "Transactions-pool::transactions cull() is_ready: {:?}", ready.is_ready(tx));
 			match ready.is_ready(tx) {
 				Readiness::Stale => {
 					first_non_stalled += 1;

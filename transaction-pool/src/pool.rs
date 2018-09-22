@@ -316,6 +316,7 @@ impl<T, S, L> Pool<T, S, L> where
 	/// Removes transaction from sender's transaction `HashMap`.
 	fn remove_from_set<R, F: FnOnce(&mut Transactions<T, S>, &S) -> R>(&mut self, sender: &T::Sender, f: F) -> Option<R> {
 		let (prev, next, result) = if let Some(set) = self.transactions.get_mut(sender) {
+		        trace!(target: "iolite_pool_trace", "Transaction-pool: remove_from_set(). set : {:?}", set);
 			let prev = set.worst_and_best();
 			let result = f(set, &self.scoring);
 			(prev, set.worst_and_best(), result)
@@ -365,6 +366,7 @@ impl<T, S, L> Pool<T, S, L> where
 		let removed_from_set = self.remove_from_set(sender, |transactions, scoring| {
 			transactions.cull(ready, scoring)
 		});
+		trace!(target: "iolite_pool_trace", "Transaction-pool: remove_staled(); removed_from_set: {:?}", removed_from_set);
 
 		match removed_from_set {
 			Some(removed) => {
@@ -382,6 +384,7 @@ impl<T, S, L> Pool<T, S, L> where
 	/// Removes all stalled transactions from given sender list (or from all senders).
 	pub fn cull<R: Ready<T>>(&mut self, senders: Option<&[T::Sender]>, mut ready: R) -> usize {
 		let mut removed = 0;
+		trace!(target: "iolite_pool_trace", "Transaction-pool::pool cull() Senders: {:?}", senders);
 		match senders {
 			Some(senders) => {
 				for sender in senders {
