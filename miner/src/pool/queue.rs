@@ -20,6 +20,7 @@ use std::{cmp, fmt};
 use std::sync::Arc;
 use std::sync::atomic::{self, AtomicUsize};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use ethcore_types::business_metadata::BusinessMetadata;
 
 use ethereum_types::{H256, U256, Address};
 use parking_lot::RwLock;
@@ -274,10 +275,17 @@ impl TransactionQueue {
 					return Err(err);
 				}
 
+
 				let imported = verifier
 					.verify_transaction(transaction)
 					.and_then(|verified| {
-						self.pool.write().import(verified).map_err(convert_error)
+                                            if let Err(err) = BusinessMetadata::is_valid(&verified.signed().as_unsigned().metadata) {
+                                                info!("[iolite] Tx pool metadata error: {}", err);
+                                                trace!(target: "txqueue", "Invalid metadata provided: {}", err);
+                                                Err(transaction::Error::InvalidMetadata(err))
+                                            } else {
+                                                self.pool.write().import(verified).map_err(convert_error)
+                                            }
 					});
 
 				match imported {

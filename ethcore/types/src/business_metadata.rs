@@ -39,6 +39,18 @@ impl fmt::Display for BusinessMetadata {
     }
 }
 
+impl BusinessMetadata {
+    pub fn is_valid(metadata: &[u8]) -> Result<bool, String> {
+        // Empty metadata is always valid
+        if metadata.is_empty() {
+            return Ok(true);
+        }
+
+        let _: BusinessMetadata = rlp::decode(metadata).map_err(|err| err.to_string())?;
+        Ok(true)
+    }
+}
+
 
 #[derive(Debug, Clone, PartialEq, Eq)]//, Serialize)]
 pub struct Metadata {

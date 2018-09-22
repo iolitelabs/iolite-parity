@@ -21,6 +21,7 @@
 
 extern crate ansi_term;
 extern crate ethcore_transaction as transaction;
+extern crate common_types as ethcore_types;
 extern crate ethereum_types;
 extern crate futures;
 extern crate futures_cpupool;

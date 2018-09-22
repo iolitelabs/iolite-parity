@@ -340,6 +340,7 @@ pub fn transaction_message(error: &TransactionError) -> String {
 		NotAllowed => "Transaction is not permitted.".into(),
 		TooBig => "Transaction is too big, see chain specification for the limit.".into(),
 		InvalidRlp(ref descr) => format!("Invalid RLP data: {}", descr),
+		InvalidMetadata(ref err) => format!("Invalid metadata: {}", err),
 	}
 }
 

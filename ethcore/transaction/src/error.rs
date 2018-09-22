@@ -79,6 +79,8 @@ pub enum Error {
 	TooBig,
 	/// Invalid RLP encoding
 	InvalidRlp(String),
+	/// Inavlid IOLITE metadata
+	InvalidMetadata(String),
 }
 
 impl From<ethkey::Error> for Error {
@@ -119,6 +121,7 @@ impl fmt::Display for Error {
 			NotAllowed => "Sender does not have permissions to execute this type of transction".into(),
 			TooBig => "Transaction too big".into(),
 			InvalidRlp(ref err) => format!("Transaction has invalid RLP structure: {}.", err),
+			InvalidMetadata(ref err) => format!("Transaction has invalid metadata: {}.", err),
 		};
 
 		f.write_fmt(format_args!("Transaction error ({})", msg))
