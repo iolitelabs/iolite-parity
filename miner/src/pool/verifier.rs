@@ -190,8 +190,14 @@ impl<C: Client> txpool::Verifier<Transaction> for Verifier<C, ::pool::scoring::N
                 let minimal_metadata_gas =
                     match BusinessMetadata::gas_required_for(&tx.transaction().metadata) {
                         Ok(gas) => {
-                            trace!(target: "txqueue", "Minimal needed gas for metadata: {}", gas);
-                            gas
+                            if tx.transaction().metadata.is_empty() {
+                                gas
+                            }
+                            else {
+                                gas
+                                    // For successfull metadata execution (we have = 1 metalog)
+                                    + 21000u64
+                            }
                         },
                         Err(err) => {
                             info!("[iolite] Tx pool metadata error: {}", err);
@@ -200,6 +206,7 @@ impl<C: Client> txpool::Verifier<Transaction> for Verifier<C, ::pool::scoring::N
                         }
                 };
 
+                trace!(target: "txqueue", "Minimal needed gas for metadata: {}", minimal_metadata_gas);
                 let minimal_gas = minimal_pure_tx_gas + U256::from(minimal_metadata_gas);
 		if tx.gas() < &minimal_gas {
 			trace!(target: "txqueue",

@@ -56,8 +56,8 @@ impl BusinessMetadata {
             return Ok(0u64);
         }
 
-        let business_metadata: BusinessMetadata = rlp::decode(metadata)?;
-        let gas_required = BusinessMetadata::gas_required_for_raw(&business_metadata.input);
+        let _: BusinessMetadata = rlp::decode(metadata)?;
+        let gas_required = BusinessMetadata::gas_required_for_raw(metadata);
         Ok(gas_required)
     }
 

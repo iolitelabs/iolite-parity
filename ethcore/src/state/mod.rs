@@ -932,6 +932,10 @@ impl<B: Backend> State<B> {
 
                         let mut ret = main_transact_result?;
                         //TODO: <Kirill A> use another than "Wasm" error type with string info
+                        ret.gas_used = ret.gas_used + min_metadata_required_gas;
+                        ret.cumulative_gas_used = ret.cumulative_gas_used + min_metadata_required_gas;
+                        ret.meta_gas_used = min_metadata_required_gas;
+                        ret.meta_logs = meta_logs;
                         ret.exception = Some(vm::Error::Wasm(error_which_occured));
                         return Ok(ret);
                     }
@@ -948,6 +952,7 @@ impl<B: Backend> State<B> {
                     result_value.gas_used = pure_tx_gas_used + min_metadata_required_gas;
                     result_value.meta_gas_used = min_metadata_required_gas;
                     result_value.cumulative_gas_used = result_value.cumulative_gas_used + min_metadata_required_gas;
+                    result_value.meta_logs = meta_logs.clone();
 
                     // Used for `break` only
                     loop {
@@ -996,7 +1001,6 @@ impl<B: Backend> State<B> {
                             result_value.gas_used = result_value.gas_used + U256::from(payer_meta_gas_used);
                             result_value.meta_gas_used = result_value.meta_gas_used + U256::from(payer_meta_gas_used);
                             result_value.cumulative_gas_used = result_value.cumulative_gas_used + U256::from(payer_meta_gas_used);
-                            result_value.meta_logs = meta_logs;
 
                             if let Some(evm_error) = result_value.exception.as_ref() {
                                 error_occured = true;
