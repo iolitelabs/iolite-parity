@@ -73,6 +73,7 @@ use trace::{TraceDB, ImportRequest as TraceImportRequest, LocalizedTrace, Databa
 use transaction::{self, LocalizedTransaction, UnverifiedTransaction, SignedTransaction, Transaction, Action};
 use types::filter::Filter;
 use types::mode::Mode as IpcMode;
+use types::business_metadata::BusinessMetadata;
 use verification;
 use verification::{PreverifiedBlock, Verifier};
 use verification::queue::BlockQueue;
@@ -1445,6 +1446,12 @@ impl Call for Client {
 
 		let sender = t.sender();
 		let options = || TransactOptions::with_tracing().dont_check_nonce();
+
+                if let Err(err) = BusinessMetadata::is_valid(&t.as_unsigned().metadata) {
+                    trace!(target: "estimate_gas", "Invalid metadata provided: {}", err);
+                    let error = ExecutionError::Internal(format!("Estimate gas: invalid metadata provided: {}", err));
+                    return Err(error.into());
+                };
 
 		let cond = |gas| {
 			let mut tx = t.as_unsigned().clone();
