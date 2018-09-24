@@ -19,10 +19,6 @@ impl BaseMetaExecutor {
     // Computes the 'intrinsic gas' for a message with a given metadata.
     //TODO: <IOLITE> need to rework algorithm
     pub fn intrinsic_gas(&self) -> Result<u64, String> {
-        if self.metadata.len() == 0 {
-            return Err("[iolite] Error! Metadata is empty.".to_string());
-        }
-
         //TODO: <IOLITE> don't use hardcoded values as
         // tx_data_non_zero_gas and tx_data_zero_gas is in ethcore/vm/src/schedule.rs
         let tx_data_zero_gas = 4u64;

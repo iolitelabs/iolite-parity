@@ -186,7 +186,21 @@ impl<C: Client> txpool::Verifier<Transaction> for Verifier<C, ::pool::scoring::N
 			});
 		}
 
-		let minimal_gas = self.client.required_gas(tx.transaction());
+                let minimal_pure_tx_gas = self.client.required_gas(tx.transaction());
+                let minimal_metadata_gas =
+                    match BusinessMetadata::gas_required_for(&tx.transaction().metadata) {
+                        Ok(gas) => {
+                            trace!(target: "txqueue", "Minimal needed gas for metadata: {}", gas);
+                            gas
+                        },
+                        Err(err) => {
+                            info!("[iolite] Tx pool metadata error: {}", err);
+                            trace!(target: "txqueue", "Invalid metadata provided: {}", err);
+                            bail!(transaction::Error::InvalidMetadata(err.to_string()))
+                        }
+                };
+
+                let minimal_gas = minimal_pure_tx_gas + U256::from(minimal_metadata_gas);
 		if tx.gas() < &minimal_gas {
 			trace!(target: "txqueue",
 				"[{:?}] Rejected transaction with insufficient gas: {} < {}",
@@ -308,12 +322,6 @@ impl<C: Client> txpool::Verifier<Transaction> for Verifier<C, ::pool::scoring::N
 			);
 			bail!(transaction::Error::Old);
 		}
-
-                if let Err(err) = BusinessMetadata::is_valid(&transaction.as_unsigned().metadata) {
-                    info!("[iolite] Tx pool metadata error: {}", err);
-                    trace!(target: "txqueue", "Invalid metadata provided: {}", err);
-                    bail!(transaction::Error::InvalidMetadata(err))
-                };
 
 		let priority = match (is_own || account_details.is_local, is_retracted) {
 			(true, _) => super::Priority::Local,

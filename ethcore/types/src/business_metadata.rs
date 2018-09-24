@@ -49,6 +49,31 @@ impl BusinessMetadata {
         let _: BusinessMetadata = rlp::decode(metadata).map_err(|err| err.to_string())?;
         Ok(true)
     }
+
+    /// Unpacks metadata and calculates required gas for `Input` field only
+    pub fn gas_required_for(metadata: &[u8]) -> Result<u64, rlp::DecoderError> {
+        if metadata.is_empty() {
+            return Ok(0u64);
+        }
+
+        let business_metadata: BusinessMetadata = rlp::decode(metadata)?;
+        let gas_required = BusinessMetadata::gas_required_for_raw(&business_metadata.input);
+        Ok(gas_required)
+    }
+
+    /// Calculates required gas for given amount of any raw data.
+    fn gas_required_for_raw(data: &[u8]) -> u64 {
+        //TODO: <IOLITE> don't use hardcoded values as
+        // tx_data_non_zero_gas and tx_data_zero_gas is in ethcore/vm/src/schedule.rs
+        //let tx_gas = 21000u64;
+        let tx_data_zero_gas = 4u64;
+        let tx_data_non_zero_gas = 68u64;
+
+        data.iter().fold(
+            0, //tx_gas,
+            |g, b| g + (match *b { 0 => tx_data_zero_gas, _ => tx_data_non_zero_gas }) as u64
+        )
+    }
 }
 
 

@@ -24,7 +24,6 @@ use std::collections::hash_map::Entry;
 use std::collections::{HashMap, BTreeMap, BTreeSet, HashSet};
 use std::fmt;
 use std::sync::Arc;
-use std::ops::Add;
 use hash::{KECCAK_NULL_RLP, KECCAK_EMPTY};
 
 use receipt::{Receipt, TransactionOutcome};
@@ -56,6 +55,7 @@ use vm;
 use meta::meta_util::{*};
 use meta::{MetaPay};
 use types::metalogs::{MetaLogs};
+use types::business_metadata::BusinessMetadata;
 
 
 mod account;
@@ -772,21 +772,71 @@ impl<B: Backend> State<B> {
 		-> Result<Executed<T::Output, V::Output>, ExecutionError> where T: trace::Tracer, V: trace::VMTracer,
 	{
                 trace!(target: "iolite_exec_trace", "[execute] at {path}", path="ethcore/src/state/mod.rs:line 760");
+                // Calculate minimal required gas for metadata
+                let min_metadata_required_gas =
+                    match BusinessMetadata::gas_required_for(&t.as_unsigned().metadata) {
+                        Ok(gas) => U256::from(gas),
+                        Err(err) => {
+                            info!("[iolite] Metadata error: {}", err);
+                            trace!(target: "iolite_exec_trace", "Invalid metadata provided: {}", err);
+                            return Err(ExecutionError::Internal(err.to_string()));
+                        }
+                };
+
+                if ! min_metadata_required_gas.is_zero() {
+                    let schedule = machine.schedule(env_info.number);
+                    let min_pure_tx_required_gas = U256::from(t.gas_required(&schedule));
+                    let total_required_gas = min_pure_tx_required_gas + min_metadata_required_gas;
+                    trace!(target: "iolite_exec_trace",
+                           "[execute] Pure min required gas: {}, Meta min required gas: {}, Total min required gas: {}",
+                           min_pure_tx_required_gas.as_u64(), min_metadata_required_gas.as_u64(), total_required_gas.as_u64());
+
+                    // If transaction has less gas than minimal need to pay for transaction,
+                    // discard and don't mine it.
+                    if t.as_unsigned().gas < total_required_gas {
+                        trace!(target: "iolite_exec_trace",
+                               "Not enough gas to pay for metadata. Required: {}; Got: {}",
+                               total_required_gas.as_u64(), t.as_unsigned().gas.as_u64());
+
+                        return Err(ExecutionError::NotEnoughBaseGas {
+                            required: total_required_gas,
+                            got: t.as_unsigned().gas
+                        });
+                    }
+                }
 
                 // Make checkpoint in case if metadata handling fails later
                 self.checkpoint();
                 let main_transact_result = {
+                    let mut tx = t.clone();
+                    //TODO: <IOLITE> need enormous testing
+                    // Give pure eth transaction it's max allowed gas
+                    tx._as_mut_unverified_tx()._as_mut_unsigned().gas = tx.as_unsigned().gas - min_metadata_required_gas;
                     let mut e = Executive::new(self, env_info, machine);
                     match virt {
-                        true => e.transact_virtual(t, options),
-                        false => e.transact(t, options),
+                        true => e.transact_virtual(&tx, options),
+                        false => e.transact(&tx, options),
                     }
                 };
 
                 // If any error or exception occur during pure tx execution, return early
                 if main_transact_result.is_err() || main_transact_result.as_ref().unwrap().exception.is_some() {
                     self.discard_checkpoint();
-                    return main_transact_result;
+                    // If any critical error occured during pure tx execution, this will throw an error
+                    let mut result_value = main_transact_result?;
+
+                    // If no critical error occured, but some evm error occured - we have an
+                    // exeception, we will still pay min metadata required gas
+                    result_value.gas_used = result_value.gas_used + min_metadata_required_gas;
+                    result_value.meta_gas_used = min_metadata_required_gas;
+                    result_value.cumulative_gas_used = result_value.cumulative_gas_used + min_metadata_required_gas;
+                    // On this stage we already paid gas for pure tx execution since we
+                    // discard_checkpoint(), not revert! So pay only for min metadata required gas
+                    let fees_value = t.gas_price * min_metadata_required_gas;
+                    self.add_balance(&env_info.author, &fees_value, CleanupMode::NoEmpty)?;
+                    self.sub_balance(&t.sender(), &fees_value, &mut CleanupMode::NoEmpty)?;
+
+                    return Ok(result_value);
                 }
 
                 if t.metadata.len() == 0 {
@@ -848,6 +898,7 @@ impl<B: Backend> State<B> {
                     let mut error_which_occured = String::new();
                     let mut meta_logs = MetaLogs::new();
                     let mut executor_gas = 0u64;
+                    let pure_tx_gas_used = main_transact_result.as_ref().unwrap().gas_used;
                     info!("[iolite] Given tx gas: {}", t.as_unsigned().gas);
                     {
                         let mut read_only_executive = Executive::new(self, env_info, machine);
@@ -872,8 +923,8 @@ impl<B: Backend> State<B> {
                         self.revert_to_checkpoint();
                         // Revert pure tx
                         self.revert_to_checkpoint();
-                        // Pay used gas
-                        let fees_value = t.gas_price * main_transact_result.as_ref().unwrap().gas_used;
+                        // Pay used gas + gas needed for metadata
+                        let fees_value = t.gas_price * (pure_tx_gas_used + min_metadata_required_gas);
                         self.add_balance(&env_info.author, &fees_value, CleanupMode::NoEmpty)?;
                         self.sub_balance(&t.sender(), &fees_value, &mut CleanupMode::NoEmpty)?;
                         // Increment nonce for sender
@@ -893,6 +944,11 @@ impl<B: Backend> State<B> {
                     // Make checkpoint in case if metadata payment fails
                     self.checkpoint();
                     let mut result_value = main_transact_result?;
+                    // We should pay at least this amount of gas from this stage
+                    result_value.gas_used = pure_tx_gas_used + min_metadata_required_gas;
+                    result_value.meta_gas_used = min_metadata_required_gas;
+                    result_value.cumulative_gas_used = result_value.cumulative_gas_used + min_metadata_required_gas;
+
                     // Used for `break` only
                     loop {
                         let mut write_executive = Executive::new(self, env_info, machine);
@@ -915,10 +971,9 @@ impl<B: Backend> State<B> {
                         };
 
                         if ! error_occured {
-                            let pure_tx_gas_used = result_value.gas_used.as_u64();
                             info!("[iolite] Successfully prepared business meta payer.");
-                            info!("[iolite] Payer estimate intrinsic gas: {}", meta_gas);
-                            info!("[iolite] Estimated total intrinsic gas: {}", pure_tx_gas_used + meta_gas);
+                            info!("[iolite] Executor+Payer estimate intrinsic gas: {}", meta_gas);
+                            info!("[iolite] Estimated total intrinsic gas: {}", pure_tx_gas_used.as_u64() + meta_gas);
                             info!("[iolite] payer.Pay.before | Pure tx gas used: {}", pure_tx_gas_used);
                             let gas_left = (t.as_unsigned().gas - result_value.gas_used).as_u64();
                             let (_, payer_meta_gas_used) = match payer.pay(gas_left) {
@@ -930,16 +985,17 @@ impl<B: Backend> State<B> {
                                 }
                             };
 
-                            let meta_gas_used = payer_meta_gas_used;
-                            info!("[iolite] payer.Pay.after | Meta gas left (intrinsic - gas_used): {}",
-                                  meta_gas-payer_meta_gas_used);
-                            info!("[iolite] payer.Pay.after | Meta gas used: {}", meta_gas_used);
-                            info!("[iolite] Total gas used: {}", pure_tx_gas_used + meta_gas_used);
+                            let total_meta_gas_used = min_metadata_required_gas.as_u64() + payer_meta_gas_used;
+                            //info!("[iolite] payer.Pay.after | Meta gas left (intrinsic - min_meta_required_gas - payer_gas_used): {}",
+                            //      meta_gas - total_meta_gas_used);
+                            info!("[iolite] payer.Pay.after | Payer meta gas used: {}", payer_meta_gas_used);
+                            info!("[iolite] payer.Pay.after | Total meta gas used: {}", total_meta_gas_used);
+                            info!("[iolite] Total gas used: {}", pure_tx_gas_used.as_u64() + total_meta_gas_used);
 
                             result_value.exception = payer.take_evm_error();
-                            result_value.gas_used = U256::from(pure_tx_gas_used + meta_gas_used);
-                            result_value.meta_gas_used = U256::from(meta_gas_used);
-                            result_value.cumulative_gas_used = result_value.cumulative_gas_used.add(U256::from(meta_gas_used));
+                            result_value.gas_used = result_value.gas_used + U256::from(payer_meta_gas_used);
+                            result_value.meta_gas_used = result_value.meta_gas_used + U256::from(payer_meta_gas_used);
+                            result_value.cumulative_gas_used = result_value.cumulative_gas_used + U256::from(payer_meta_gas_used);
                             result_value.meta_logs = meta_logs;
 
                             if let Some(evm_error) = result_value.exception.as_ref() {
@@ -961,6 +1017,7 @@ impl<B: Backend> State<B> {
                         let fees_value = t.gas_price * result_value.gas_used;
                         self.add_balance(&env_info.author, &fees_value, CleanupMode::NoEmpty)?;
                         self.sub_balance(&t.sender(), &fees_value, &mut CleanupMode::NoEmpty)?;
+
                         // Increment nonce for sender
                         self.inc_nonce(&t.sender())?;
 
@@ -969,13 +1026,18 @@ impl<B: Backend> State<B> {
                         return Ok(result_value);
                     }
 
+                    // If no error occur, we should still pay for storing of metadata itself
+                    let fees_value = t.gas_price * min_metadata_required_gas;
+                    self.add_balance(&env_info.author, &fees_value, CleanupMode::NoEmpty)?;
+                    self.sub_balance(&t.sender(), &fees_value, &mut CleanupMode::NoEmpty)?;
+
                     info!("[iolite] Metadata executed successfully");
                     self.discard_checkpoint();
                     return Ok(result_value);
                 }
 
                 main_transact_result
-	}
+        }
 
 	fn touch(&mut self, a: &Address) -> trie::Result<()> {
 		self.require(a, false)?;
