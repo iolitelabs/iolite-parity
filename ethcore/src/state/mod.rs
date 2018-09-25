@@ -899,7 +899,7 @@ impl<B: Backend> State<B> {
                     let mut meta_logs = MetaLogs::new();
                     let mut executor_gas = 0u64;
                     let pure_tx_gas_used = main_transact_result.as_ref().unwrap().gas_used;
-                    info!("[iolite] Given tx gas: {}", t.as_unsigned().gas);
+                    trace!(target: "iolite_exec_trace", "[iolite] Given tx gas: {}", t.as_unsigned().gas);
                     {
                         let mut read_only_executive = Executive::new(self, env_info, machine);
                         let res = unpack_business_metadata(t.sender(),
@@ -940,7 +940,7 @@ impl<B: Backend> State<B> {
                         return Ok(ret);
                     }
                     info!("[iolite] Successfully unpacked business metadata.");
-                    info!("[iolite] Executor estimate intrinsic gas: {}", executor_gas);
+                    trace!(target: "iolite_exec_trace", "[iolite] Executor estimate intrinsic gas: {}", executor_gas);
                     // Revert state after metadata executor's processing since it was considered to
                     // be read evm without changing any current state
                     self.revert_to_checkpoint();
@@ -976,10 +976,10 @@ impl<B: Backend> State<B> {
                         };
 
                         if ! error_occured {
-                            info!("[iolite] Successfully prepared business meta payer.");
-                            info!("[iolite] Executor+Payer estimate intrinsic gas: {}", meta_gas);
-                            info!("[iolite] Estimated total intrinsic gas: {}", pure_tx_gas_used.as_u64() + meta_gas);
-                            info!("[iolite] payer.Pay.before | Pure tx gas used: {}", pure_tx_gas_used);
+                            trace!(target: "iolite_exec_trace", "[iolite] Successfully prepared business meta payer.");
+                            trace!(target: "iolite_exec_trace", "[iolite] Executor+Payer estimate intrinsic gas: {}", meta_gas);
+                            trace!(target: "iolite_exec_trace", "[iolite] Estimated total intrinsic gas: {}", pure_tx_gas_used.as_u64() + meta_gas);
+                            trace!(target: "iolite_exec_trace", "[iolite] payer.Pay.before | Pure tx gas used: {}", pure_tx_gas_used);
                             let gas_left = (t.as_unsigned().gas - result_value.gas_used).as_u64();
                             let (_, payer_meta_gas_used) = match payer.pay(gas_left) {
                                 Ok(ret) => ret,
@@ -993,9 +993,9 @@ impl<B: Backend> State<B> {
                             let total_meta_gas_used = min_metadata_required_gas.as_u64() + payer_meta_gas_used;
                             //info!("[iolite] payer.Pay.after | Meta gas left (intrinsic - min_meta_required_gas - payer_gas_used): {}",
                             //      meta_gas - total_meta_gas_used);
-                            info!("[iolite] payer.Pay.after | Payer meta gas used: {}", payer_meta_gas_used);
-                            info!("[iolite] payer.Pay.after | Total meta gas used: {}", total_meta_gas_used);
-                            info!("[iolite] Total gas used: {}", pure_tx_gas_used.as_u64() + total_meta_gas_used);
+                            trace!(target: "iolite_exec_trace", "[iolite] payer.Pay.after | Payer meta gas used: {}", payer_meta_gas_used);
+                            trace!(target: "iolite_exec_trace", "[iolite] payer.Pay.after | Total meta gas used: {}", total_meta_gas_used);
+                            trace!(target: "iolite_exec_trace", "[iolite] Total gas used: {}", pure_tx_gas_used.as_u64() + total_meta_gas_used);
 
                             result_value.exception = payer.take_evm_error();
                             result_value.gas_used = result_value.gas_used + U256::from(payer_meta_gas_used);

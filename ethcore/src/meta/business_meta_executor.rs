@@ -46,7 +46,7 @@ impl<'a, B: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, B> {
 
         let business_metadata: BusinessMetadata = rlp::decode(&self.metadata)
             .map_err(|err| err.to_string())?;
-        info!("[iolite-detail] Business metadata: {}", business_metadata);
+        trace!(target: "iolite_exec_trace", "[iolite-detail] Business metadata: {}", business_metadata);
 
         //TODO: Copy fields from business metadata to tx
         let mut tx = self.transaction.get_copy_with_data_equals(&business_metadata.input);
@@ -60,7 +60,7 @@ impl<'a, B: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, B> {
             Err(e) => return Err(e.to_string()),
         };
 
-        info!("[iolite] Executed metadata: {:x?}", result.output);
+        trace!(target: "iolite_exec_trace", "[iolite] Executed metadata: {:x?}", result.output);
         if result.output.len() != 64 {
             return Err("The business call result does not match the format (address, uint256)".to_string());
         }
@@ -69,7 +69,7 @@ impl<'a, B: 'a + StateBackend> MetaExecute for BusinessMetaExecutor<'a, B> {
         metalogs.push(Address::from(&result.output[12..32]), U256::from(&result.output[32..]));
 
         for data in metalogs.logs() {
-            info!("[iolite] Decoded Metalogs. To: {}, Value: {}", data.recipient, data.amount);
+            trace!(target: "iolite_exec_trace", "[iolite] Decoded Metalogs. To: {}, Value: {}", data.recipient, data.amount);
         }
 
         Ok(metalogs)

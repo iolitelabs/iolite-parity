@@ -43,7 +43,7 @@ impl fmt::Display for MetaUtilError {
 pub fn unpack_simple_metadata<'a, T: 'a + StateBackend>(from: Address, metadata: Bytes, meta_limit: U256, read_evm: &'a mut Executive<'a, T>)//read_evm: Executive)
         // return (payer, meta_logs, payment, intrinsic_gas)
         -> Result<(SimpleMetaPayer<'a, T>, MetaLogs, U256, u64), String/*MetaUtilError*/> {
-    info!("[iolite] UnpackSimpleMetadata. Metalimit={}", meta_limit);
+    trace!(target: "iolite_exec_trace", "[iolite] UnpackSimpleMetadata. Metalimit={}", meta_limit);
 
     let mut executor = SimpleMetaExecutor::new(metadata);
 
@@ -99,7 +99,7 @@ pub fn prepare_business_meta_payer<'a, T: 'a + StateBackend>(from: Address,
         // return (payer, payment, intrinsic_gas)
         -> Result<(BusinessMetaPayer<'a, T>, U256, u64), String/*MetaUtilError*/>
 {
-    info!("[iolite] Prepare business meta payer. Metalimit={}", meta_limit);
+    trace!(target: "iolite_exec_trace", "[iolite] Prepare business meta payer. Metalimit={}", meta_limit);
 
     let payer = BusinessMetaPayer::new(from, meta_logs, meta_limit, transaction, write_evm);
     //TODO: <IOLITE> do we really need this?

@@ -87,7 +87,7 @@ fn try_pay<'a, T: 'a + StateBackend>(from: Address, log: &MetaLog,
     //TODO: <IOLITE> is gas_left == refunded ?
     gas_left = result.refunded.as_u64(); // Will panic if number is larger then 2^64
     let gas_used = result.gas_used.as_u64();
-    info!("[iolite] TryPay gas={}; gas_left={}, gas_used={}", gas, gas_left, gas_used);
+    trace!(target: "iolite_exec_trace", "[iolite] TryPay gas={}; gas_left={}, gas_used={}", gas, gas_left, gas_used);
 
     Ok((gas_used, result.exception))
 }
