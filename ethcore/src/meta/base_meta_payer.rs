@@ -66,7 +66,7 @@ impl MetaPayable for BaseMetaPayer {
             sum = sum.add(log.amount);
         }
 
-        info!("[iolite] CanPay sum={}, metaLimit={}", sum, self.meta_limit);
+        trace!(target: "iolite_exec_trace", "[iolite] CanPay sum={}, metaLimit={}", sum, self.meta_limit);
         if let Ordering::Less = self.meta_limit.cmp(&sum) {
             return PaymentOptions::CantPay;
         }

@@ -7,7 +7,7 @@ license = "GPL-3.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 
 [dependencies]
-log = "0.3"
+log = { version  = "0.3", features = ["release_max_level_info"] }
 env_logger = "0.4"
 rustc-hex = "1.0"
 docopt = "0.8"
