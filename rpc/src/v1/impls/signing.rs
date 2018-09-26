@@ -225,7 +225,7 @@ impl<D: Dispatcher + 'static> EthSigning for SigningQueueClient<D> {
 	}
 
 	fn send_transaction(&self, meta: Metadata, request: RpcTransactionRequest) -> BoxFuture<RpcH256> {
-	        println!("Sent send_transaction in {path}", path="parity/rpc/src/v1/impls/signing.rs:line 228");
+	        trace!(target: "iolite_exec_trace", "Sent send_transaction {req:?} in {path}", req=request, path="parity/rpc/src/v1/impls/signing.rs:line 228");
 		let res = self.dispatch(
 			RpcConfirmationPayload::SendTransaction(request),
 			meta.dapp_id().into(),

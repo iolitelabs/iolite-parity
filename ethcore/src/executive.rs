@@ -388,8 +388,8 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
 		tracer: &mut T,
 		vm_tracer: &mut V
 	) -> vm::Result<FinalizationResult> where T: Tracer, V: VMTracer {
-                trace!(target: "iolite_exec_trace", "[Executive::call] at {path}", path="ethcore/src/executive.rs:line 377");
-                trace!(target: "iolite_exec_trace", "[Executive::call](params={:?}) self.env_info={:?}, static={}",
+                trace!(target: "iolite_detail_trace", "[Executive::call] at {path}", path="ethcore/src/executive.rs:line 377");
+                trace!(target: "iolite_detail_trace", "[Executive::call](params={:?}) self.env_info={:?}, static={}",
                         params, self.info, self.static_flag);
 
 		trace!("Executive::call(params={:?}) self.env_info={:?}, static={}", params, self.info, self.static_flag);

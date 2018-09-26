@@ -840,7 +840,7 @@ impl<B: Backend> State<B> {
                 }
 
                 if t.metadata.len() == 0 {
-                    info!("[iolite] Metadata is empty.");
+                    trace!(target: "iolite_exec_trace", "[iolite] Metadata is empty.");
                     self.discard_checkpoint();
                     return main_transact_result;
                 }
