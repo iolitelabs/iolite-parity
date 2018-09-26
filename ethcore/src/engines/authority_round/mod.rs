@@ -987,9 +987,11 @@ impl Engine<EthereumMachine> for AuthorityRound {
 					// the seal
 					self.clear_empty_steps(parent_step);
 
-					// report any skipped primaries between the parent block and
-					// the block we're sealing
-					self.report_skipped(header, step, u64::from(parent_step) as usize, &*validators, set_number);
+                                        // report any skipped primaries between the parent block and
+                                        // the block we're sealing, unless we have empty steps enabled
+                                        if header.number() < self.empty_steps_transition {
+                                            self.report_skipped(header, step, u64::from(parent_step) as usize, &*validators, set_number);
+                                        }
 
 					let mut fields = vec![
 						encode(&step).into_vec(),
