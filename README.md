@@ -1,56 +1,37 @@
-# Parity - fast, light, and robust Ethereum client
+# Parity-iOlite - fast, light, and robust iOlite client
 
-## [» Download the latest release «](https://github.com/paritytech/parity/releases/latest)
-
-[![build status](https://gitlab.parity.io/parity/parity/badges/master/build.svg)](https://gitlab.parity.io/parity/parity/commits/master)
-[![codecov](https://codecov.io/gh/paritytech/parity/branch/master/graph/badge.svg)](https://codecov.io/gh/paritytech/parity)
-[![Snap Status](https://build.snapcraft.io/badge/paritytech/parity.svg)](https://build.snapcraft.io/user/paritytech/parity)
 [![GPLv3](https://img.shields.io/badge/license-GPL%20v3-green.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 
 ### Join the chat!
 
-Get in touch with us on Gitter:
-[![Gitter: Parity](https://img.shields.io/badge/gitter-parity-4AB495.svg)](https://gitter.im/paritytech/parity)
-[![Gitter: Parity.js](https://img.shields.io/badge/gitter-parity.js-4AB495.svg)](https://gitter.im/paritytech/parity.js)
-[![Gitter: Parity/Miners](https://img.shields.io/badge/gitter-parity/miners-4AB495.svg)](https://gitter.im/paritytech/parity/miners)
-[![Gitter: Parity-PoA](https://img.shields.io/badge/gitter-parity--poa-4AB495.svg)](https://gitter.im/paritytech/parity-poa)
+Get in touch with us - join our community on Telegram:
+[![Telegram: iOlite Community](https://img.shields.io/badge/Telegram-iolite-brightgreen.svg)](https://t.me/iolite)
 
-Or join our community on Matrix:
-[![Riot: +Parity](https://img.shields.io/badge/riot-%2Bparity%3Amatrix.parity.io-orange.svg)](https://riot.im/app/#/group/+parity:matrix.parity.io)
+Official website: https://iolite.io
 
-Official website: https://parity.io
+iOlite explorer: https://scan.iolite.io
 
-Be sure to check out [our wiki](https://wiki.parity.io) for more information.
+Be sure to check out [our wiki](https://wiki.iolite.io) for more information.
 
 ----
 
 ## About Parity
 
-Parity's goal is to be the fastest, lightest, and most secure Ethereum client. We are developing Parity using the sophisticated and cutting-edge Rust programming language. Parity is licensed under the GPLv3, and can be used for all your Ethereum needs.
+Parity's goal is to be the fastest, lightest, and most secure Ethereum client. We are developing Parity using the sophisticated and cutting-edge Rust programming language.
 
-Parity comes with a built-in wallet, to install it please follow [these instructions](https://wiki.parity.io/Parity-Wallet). It includes various functionality allowing you to:
+iOlite-Parity is a fork of official Parity-Ethereum repository with changes made by iOlite team to serve our project's purposes. iOlite-Parity was modified to support iOlite blockchain. To get more information about iOlite blockchain, check out our whitepaper on our [official website](https://iolite.io).
 
-- create and manage your Ethereum accounts;
-- manage your Ether and any Ethereum tokens;
-- create and register your own tokens;
-- and much more.
-
-From Parity Ethereum client version >=1.10, the User Interface (UI) is accessible in a separate application called Parity UI. To keep using the UI in the browser (deprecated), [follow these steps](https://wiki.parity.io/FAQ-Basic-Operations,-Configuration,-and-Synchronization.md#the-parity-ui-application-isnt-working-the-way-i-want).
+iOlite-Parity is licensed under the GPLv3, and can be used for all your iOlite needs.
 
 By default, Parity will also run a JSONRPC server on `127.0.0.1:8545` and a websockets server on `127.0.0.1:8546`. This is fully configurable and supports a number of APIs.
-
-If you run into an issue while using Parity, feel free to file one in this repository or hop on our [Gitter](https://gitter.im/paritytech/parity) or [Riot](https://riot.im/app/#/group/+parity:matrix.parity.io) chat room to ask a question. We are glad to help!
-
-**For security-critical issues**, please refer to the security policy outlined in [SECURITY.MD](SECURITY.md).
-
-Parity's current release is 1.9. You can download it at https://github.com/paritytech/parity/releases or follow the instructions below to build from source.
+To build iOlite-Parity you should follow the instructions below to build from source.
 
 ----
 
 ## Build dependencies
 
-**Parity requires Rust version 1.23.0 to build**
+**iOlite-Parity requires Rust version 1.27.1 to build**
 
 We recommend installing Rust through [rustup](https://www.rustup.rs/). If you don't already have rustup, you can install it like this:
 
@@ -68,11 +49,6 @@ We recommend installing Rust through [rustup](https://www.rustup.rs/). If you do
 
 	`clang` is required. It comes with Xcode command line tools or can be installed with homebrew.
 
-- Windows
-  Make sure you have Visual Studio 2015 with C++ support installed. Next, download and run the rustup installer from
-	https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe, start "VS2015 x64 Native Tools Command Prompt", and use the following command to install and set up the msvc toolchain:
-  ```bash
-	$ rustup default stable-x86_64-pc-windows-msvc
   ```
 
 Once you have rustup installed, then you need to install:
@@ -83,34 +59,15 @@ Make sure that these binaries are in your `PATH`. After that you should be able 
 
 ----
 
-## Install from the snap store
-
-In any of the [supported Linux distros](https://snapcraft.io/docs/core/install):
-
-```bash
-sudo snap install parity
-```
-
-Or, if you want to contribute testing the upcoming release:
-
-```bash
-sudo snap install parity --beta
-```
-
-And to test the latest code landed into the master branch:
-
-```bash
-sudo snap install parity --edge
-```
-
-----
-
 ## Build from source
 
 ```bash
 # download Parity code
-$ git clone https://github.com/paritytech/parity
-$ cd parity
+$ git clone --single-branch -b iolite https://github.com/iolitelabs/iolite-parity.git
+$ cd iolite-parity
+
+# Set current Rust version to 1.27.1
+$ rustup override set 1.27.1
 
 # build in release mode
 $ cargo build --release
@@ -136,50 +93,17 @@ Cleaning the repository will most likely solve the issue, try:
 $ cargo clean
 ```
 
-This will always compile the latest nightly builds. If you want to build stable or beta, do a
-
-```bash
-$ git checkout stable
-```
-
-or
-
-```bash
-$ git checkout beta
-```
-
-first.
+This will always compile the latest stable iOlite builds. 
 
 ----
 
-## Simple one-line installer for Mac and Ubuntu
-
-```bash
-bash <(curl https://get.parity.io -Lk)
-```
-
-The one-line installer always defaults to the latest beta release. To install a stable release, run:
-
-```bash
-bash <(curl https://get.parity.io -Lk) -r stable
-```
 
 ## Start Parity
 
-### Manually
-
-To start Parity manually, just run
+To start iOlite-Parity, just run
 
 ```bash
-$ ./target/release/parity
+$ ./target/release/parity --config iolite_config_node.toml
 ```
 
-and Parity will begin syncing the Ethereum blockchain.
-
-### Using systemd service file
-
-To start Parity as a regular user using systemd init:
-
-1. Copy `./scripts/parity.service` to your
-systemd user directory (usually `~/.config/systemd/user`).
-2. To configure Parity, write a `/etc/parity/config.toml` config file, see [Configuring Parity](https://paritytech.github.io/wiki/Configuring-Parity) for details.
+and iOlite-Parity will begin syncing the iOlite blockchain.
